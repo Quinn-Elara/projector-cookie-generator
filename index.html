@@ -384,7 +384,7 @@ $('resetBtn').onclick=()=>{
 };
 function sanitise(s){return(s||'').replace(/[^a-zA-Z0-9_\-]/g,' ').replace(/\s+/g,' ').trim().replace(/\s/g,'_');}
 function buildFilename(d){
-  const m=sanitise(d.manufacturer),l=sanitise(d.lamp||d.luminaire||d.lumcat);
+  const m=sanitise(d.manufacturer),l=sanitise(d.nameHint||d.lamp||d.luminaire||d.lumcat);
   const suf=$('typeSelect').value==='colour'?'_colour':'';
   // Append projector FOV in radians if available, rounded to 4 decimal places
   const fovSuf=lastProjFOV!==null?'_FOV-'+lastProjFOV.toFixed(4).replace('.','p'):'';
@@ -489,26 +489,26 @@ function parseLDT(text){
   const Ityp=Math.round(gn(1)||0),Isym=Math.round(gn(2)||0);
   const Mc=Math.round(gn(3)||0),Ng=Math.round(gn(5)||0);
   let manufacturer=gl(0).replace(/\s*(EConv|LDT2IES|DIALux|Relux|Calculux)\s*\S*/gi,'').trim()||gl(0);
-  const luminaireName=gl(8),luminaireNo=gl(9),lampName=gl(10);
-  const line11=gl(11);
-  const isDate=/^\d{1,2}[.\-\/]\d{1,2}[.\-\/]\d{2,4}$/.test(line11);
-  let lumFlux=gn(12); if(lumFlux!==null&&lumFlux<=0) lumFlux=null;
-  let colorTemp=gn(13); if(colorTemp===null||colorTemp<1000||colorTemp>20000) colorTemp=null;
-  let cri=gn(14); if(cri===null||cri<0||cri>100) cri=null;
-  let headerWatts=gn(15); if(headerWatts!==null&&headerWatts<=0) headerWatts=null;
-  const nSets=Math.max(1,Math.round(gn(26)||1));
-  let lumensPerLamp=null,setWatts=null,setCCT=null,setCRI=null;
-  for(let s=0;s<nSets;s++){
-    const base=27+s*5;
-    const lpl=gn(base+1); if(s===0&&lpl!==null&&lpl>0) lumensPerLamp=lpl;
-    const sct=gn(base+2); if(s===0&&sct!==null&&sct>=1000&&sct<=20000) setCCT=sct;
-    const scr=gn(base+3); if(s===0&&scr!==null&&scr>=0&&scr<=100) setCRI=scr;
-    const sw=gn(base+4);  if(s===0&&sw!==null&&sw>0) setWatts=sw;
-  }
-  const watts=setWatts||headerWatts;
-  if(colorTemp===null) colorTemp=setCCT;
-  if(cri===null) cri=setCRI;
-  const dataStart=27+nSets*5+10;
+  // EULUMDAT header, 0-based line indices:
+  //   8 luminaire name, 9 luminaire number, 10 file name, 11 date/user,
+  //   12-20 luminaire and luminous-area dimensions (mm), 21 DFF, 22 LORL,
+  //   23 conversion factor, 24 tilt, 25 number of lamp sets (n), then n sets of
+  //   6 lines (lamp count, lamp type, total flux in lm, colour temperature,
+  //   colour rendering, watts), then 10 direct-ratio lines, then the angle and
+  //   intensity data.
+  const luminaireName=gl(8),luminaireNo=gl(9);
+  const nSets=Math.round(gn(25)||0);
+  if(!(nSets>=1&&nSets<=100)) throw new Error('LDT: invalid lamp-set count: '+gn(25));
+  // Flux, colour and wattage come from the first lamp set only.
+  const SET0=26;
+  const lampType=gl(SET0+1);
+  let lumFlux=gn(SET0+2); if(lumFlux!==null&&lumFlux<=0) lumFlux=null;
+  let colorTemp=gn(SET0+3); if(colorTemp===null||colorTemp<1000||colorTemp>20000) colorTemp=null;
+  // This field can hold a rendering group (1A, 1B, 2, 3 ...) instead of a CRI, so ignore implausibly low values.
+  let cri=gn(SET0+4); if(cri===null||cri<10||cri>100) cri=null;
+  let watts=gn(SET0+5); if(watts!==null&&watts<=0) watts=null;
+  const lumensPerLamp=lumFlux;
+  const dataStart=SET0+nSets*6+10;
   if(Mc<=0||Mc>MAX_ANGLES) throw new Error('LDT: invalid C-plane count: '+Mc);
   if(Ng<=0||Ng>MAX_ANGLES) throw new Error('LDT: invalid gamma count: '+Ng);
   const nums=[];
@@ -550,7 +550,8 @@ function parseLDT(text){
   if(colorTemp&&colorTemp>=1800&&colorTemp<=8000){$('ctSlider').value=colorTemp;$('ctVal').textContent=Math.round(colorTemp)+' K';}
   return{meta:{},vertAngles:gAngles,horizAngles:cAngles,candela:cd,photometricType:Ityp,
          watts,colorTemp,manufacturer,lumcat:luminaireNo||null,
-         lamp:lampName||null,luminaire:luminaireName||null,cri,lumFlux};
+         lamp:lampType||null,luminaire:luminaireName||null,cri,lumFlux,
+         nameHint:luminaireName||luminaireNo||null};
 }
 
 // ── Photometric angle computations ──────────────────────────
@@ -895,7 +896,7 @@ function showMeta(d) {
   const ep = deriveEngineParams();
   const projLabel = 'Projector FOV' + (doScale ? ' (scaled)' : '');
   const sfDisplay = doScale ? sf.toFixed(4) + '×' : '1.0000× (off)';
-  const criDisplay = d.cri !== null ? 'CRI ' + Math.round(d.cri) : 'CRI —';
+  const criDisplay = d.cri !== null ? 'CRI ' + Math.round(d.cri) : 'CRI Not recorded';
 
   // ── Photometric data cards ──
   let h = `
