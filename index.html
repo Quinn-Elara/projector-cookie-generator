@@ -1,4 +1,9 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photometric Cookie Generator</title>
 <style>
   /* ── CSS variable fallbacks for standalone use ── */
   :root{
@@ -143,7 +148,18 @@
   .error{color:var(--color-text-danger)!important}
   .muted{color:var(--color-text-tertiary)}
   body,html{background:#111;margin:0;padding:0}
+
+  /* ── Narrow screens (needed now that the viewport meta tag is present) ── */
+  @media (max-width:700px){
+    .root{max-width:100%;padding:1.5rem 1rem}
+    .sr{flex-wrap:wrap}
+    .sr label{min-width:0;flex:1 1 100%}
+    .controls,.preview-row{grid-template-columns:1fr}
+    .mg,.engine-params{grid-template-columns:repeat(2,1fr)}
+  }
 </style>
+</head>
+<body>
 <div class="root">
 <div style="text-align:center;margin-bottom:1.75rem">
   <h1 style="font-size:26px;font-weight:500;color:#e8e6df;margin:0 0 6px">Photometric Cookie Generator</h1>
@@ -181,7 +197,6 @@
     <input type="range" id="gammaSlider" min="0.3" max="3.0" step="0.05" value="1.0"/>
     <span class="sv" id="gammaVal">1.00</span>
   </div>
-  <div class="tr"><label>Normalise to peak candela</label><input type="checkbox" id="normCheck" checked/></div>
   <div class="tr"><label>Auto-scale beam to fill texture <span class="badge">smart</span></label><input type="checkbox" id="autoScaleCheck"/></div>
   <div class="tr"><label>Soft edge falloff <span class="badge">smooth</span></label><input type="checkbox" id="softEdgeCheck"/></div>
   <div class="sr" id="softEdgeRow" style="display:none">
@@ -189,7 +204,7 @@
     <input type="range" id="softEdgeSlider" min="0.01" max="0.5" step="0.01" value="0.1"/>
     <span class="sv" id="softEdgeVal">0.10</span>
   </div>
-  <div class="tr"><label>Blue noise dithering <span class="badge">quality</span></label><input type="checkbox" id="ditherCheck"/></div>
+  <div class="tr"><label>Gradient noise dithering <span class="badge">quality</span></label><input type="checkbox" id="ditherCheck"/></div>
   <hr class="dv">
   <div class="sr">
     <label>Distance to wall (m)</label>
@@ -284,11 +299,25 @@
 </div>
 <div class="status" id="statusEl">No file loaded.</div>
 <div style="text-align:center;margin-top:2rem;padding-top:1rem;border-top:0.5px solid var(--color-border-tertiary)">
-  <span style="font-size:11px;color:#444441">v20</span>
+  <a id="buildId" style="font-size:11px;color:#444441;text-decoration:none">dev</a>
 </div>
 </div>
 <script>
 const $=id=>document.getElementById(id);
+
+// Build stamp: the Pages deploy workflow replaces the placeholder below with the
+// commit SHA. Unstamped copies (local checkouts) show "dev".
+const BUILD_COMMIT='__COMMIT_SHA__';
+(()=>{
+  const el=$('buildId');
+  if(/^[0-9a-f]{7,64}$/.test(BUILD_COMMIT)){
+    el.textContent=BUILD_COMMIT.slice(0,7);
+    el.href='https://github.com/Quinn-Elara/projector-cookie-generator/commit/'+BUILD_COMMIT;
+    el.title='Commit '+BUILD_COMMIT;
+  } else {
+    el.title='Unstamped local build';
+  }
+})();
 let parsedData=null, fileFormat=null, outputFilename='ies_texture.png';
 let lastScaleFactor=1.0; // persisted from render for meta display
 let lastProjFOV=null;    // persisted from showMeta for filename
@@ -331,7 +360,7 @@ document.querySelectorAll('.preset-btn').forEach(btn=>{
  ['fresnelSlider','fresnelVal',v=>v.toFixed(2)],['fresnelFreqSlider','fresnelFreqVal',v=>v.toFixed(1)],
  ['hazeSlider','hazeVal',v=>v.toFixed(2)],
 ].forEach(([s,v,f])=>{ $(s).oninput=()=>{$(v).textContent=f(parseFloat($(s).value));if(parsedData)render();}; });
-['normCheck','ditherCheck','autoScaleCheck','softEdgeCheck'].forEach(id=>{
+['ditherCheck','autoScaleCheck','softEdgeCheck'].forEach(id=>{
   $(id).onchange=()=>{ if(id==='softEdgeCheck') $('softEdgeRow').style.display=$(id).checked?'flex':'none'; if(parsedData)render(); };
 });
 $('typeSelect').onchange=()=>{ $('lensPanel').style.display=$('typeSelect').value==='colour'?'block':'none'; $('previewLabel').textContent=$('typeSelect').value==='colour'?'Preview (colour)':'Preview (linear)'; if(parsedData)render(); };
@@ -363,13 +392,24 @@ function buildFilename(d){
   if(m&&l) base=m+'-'+l; else if(m) base=m; else if(l) base=l; else base='ies_texture';
   return base+suf+fovSuf+'_cookie.png';
 }
+// Decode as UTF-8 when valid, otherwise fall back to Windows-1252 (common in older IES/LDT files).
+function decodeText(buf){
+  try{ return new TextDecoder('utf-8',{fatal:true}).decode(buf); }
+  catch(_){ return new TextDecoder('windows-1252').decode(buf); }
+}
 function handleFile(file){
-  const ext=file.name.split('.').pop().toLowerCase();
+  const dot=file.name.lastIndexOf('.');
+  const ext=dot>=0?file.name.slice(dot+1).toLowerCase():'';
+  if(ext!=='ies'&&ext!=='ldt'){
+    $('statusEl').textContent='Error: unsupported file type'+(ext?' ".'+ext+'"':'')+'. Please choose a .ies or .ldt file.';
+    $('statusEl').className='status error';
+    $('fileInput').value='';
+    return;
+  }
   const reader=new FileReader();
   reader.onload=e=>{
     try{
-      const bytes=new Uint8Array(e.target.result);
-      let text=''; for(let i=0;i<bytes.length;i++) text+=String.fromCharCode(bytes[i]);
+      const text=decodeText(e.target.result);
       parsedData=ext==='ldt'?parseLDT(text):parseIES(text);
       fileFormat=ext;
       render(); // render() also calls showMeta internally
@@ -385,12 +425,20 @@ function handleFile(file){
   reader.readAsArrayBuffer(file);
 }
 
+// ── Validation helpers ──────────────────────────────────────
+const MAX_ANGLES=10000; // sanity limit on angle counts, guards against corrupt headers
+function assertAscending(a,label){
+  for(let k=1;k<a.length;k++)
+    if(a[k]<a[k-1]) throw new Error(label+' angles must be in ascending order');
+}
+
 // ── IES parser ──────────────────────────────────────────────
 function parseIES(text){
   const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length>0);
-  let dataStart=-1; const meta={};
+  let dataStart=-1, tilt='NONE'; const meta={};
   for(let i=0;i<lines.length;i++){
-    if(lines[i].startsWith('TILT=')){dataStart=i+1;break;}
+    const tm=lines[i].match(/^TILT\s*=\s*(.*)$/i);
+    if(tm){dataStart=i+1;tilt=tm[1].trim().toUpperCase();break;}
     const m=lines[i].match(/^\[([^\]]+)\]\s*(.*)/);
     if(m) meta[m[1]]=m[2];
   }
@@ -398,14 +446,30 @@ function parseIES(text){
   const tok=[];
   for(let i=dataStart;i<lines.length;i++)
     lines[i].split(/[\s,]+/).forEach(t=>{if(t.length>0&&isFinite(t))tok.push(parseFloat(t));});
-  let i=0; i++;i++;
+  let i=0;
+  if(tilt==='INCLUDE'){
+    // TILT=INCLUDE: lamp-to-luminaire geometry, pair count n, then n angles and n
+    // multipliers sit in front of the photometric data. Skip them (tilt is not applied).
+    // TILT=NONE and TILT=<filename> have no inline tilt data.
+    i++;
+    const nT=Math.round(tok[i++]);
+    if(!(nT>=0&&nT<=MAX_ANGLES)) throw new Error('IES: invalid TILT table length');
+    i+=2*nT;
+  }
+  i++;i++;
   const cm=tok[i++],nV=Math.round(tok[i++]),nH=Math.round(tok[i++]);
   const pType=Math.round(tok[i++]);
+  if(!Number.isInteger(nV)||nV<1||nV>MAX_ANGLES) throw new Error('IES: invalid vertical angle count: '+nV);
+  if(!Number.isInteger(nH)||nH<1||nH>MAX_ANGLES) throw new Error('IES: invalid horizontal angle count: '+nH);
   i+=4; const bf=tok[i++]; i+=2;
+  const needed=i+nV+nH+nV*nH;
+  if(tok.length<needed) throw new Error('IES: file ends early (expected '+needed+' numbers, found '+tok.length+')');
   const vA=[]; for(let j=0;j<nV;j++) vA.push(tok[i++]);
   const hA=[]; for(let j=0;j<nH;j++) hA.push(tok[i++]);
+  assertAscending(vA,'IES: vertical');
+  assertAscending(hA,'IES: horizontal');
   const cd=[];
-  for(let h=0;h<nH;h++){const row=[];for(let v=0;v<nV;v++) row.push((tok[i++]||0)*cm*bf);cd.push(row);}
+  for(let h=0;h<nH;h++){const row=[];for(let v=0;v<nV;v++) row.push(tok[i++]*cm*bf);cd.push(row);}
   let ct=null;
   if(meta['CCT']) ct=parseFloat(meta['CCT']);
   else if(meta['COLOR']){const m2=meta['COLOR'].match(/(\d{3,5})/);if(m2)ct=parseFloat(m2[1]);}
@@ -445,8 +509,8 @@ function parseLDT(text){
   if(colorTemp===null) colorTemp=setCCT;
   if(cri===null) cri=setCRI;
   const dataStart=27+nSets*5+10;
-  if(Mc<=0) throw new Error('LDT: invalid C-plane count: '+Mc);
-  if(Ng<=0) throw new Error('LDT: invalid gamma count: '+Ng);
+  if(Mc<=0||Mc>MAX_ANGLES) throw new Error('LDT: invalid C-plane count: '+Mc);
+  if(Ng<=0||Ng>MAX_ANGLES) throw new Error('LDT: invalid gamma count: '+Ng);
   const nums=[];
   for(let k=dataStart;k<lines.length;k++)
     (lines[k]||'').trim().split(/[\s,]+/).forEach(p=>{const v=parseFloat(p);if(!isNaN(v))nums.push(v);});
@@ -460,6 +524,10 @@ function parseLDT(text){
     case 4: storedPlanes=Math.floor(Mc/4)+1; break;
     default: storedPlanes=Mc;
   }
+  assertAscending(cAngles,'LDT: C-plane');
+  assertAscending(gAngles,'LDT: gamma');
+  const needed=ni+storedPlanes*Ng;
+  if(nums.length<needed) throw new Error('LDT: file ends early (expected '+needed+' numbers, found '+nums.length+')');
   const scale=(lumensPerLamp&&lumensPerLamp>0)?lumensPerLamp/1000.0:1.0;
   const storedCd=[];
   for(let c=0;c<storedPlanes;c++){
@@ -575,10 +643,10 @@ function sampleData(data,theta,phi){
   return(cd[hi][vi]*(1-ht)+cd[hi1][vi]*ht)*(1-vt)+(cd[hi][vi1]*(1-ht)+cd[hi1][vi1]*ht)*vt;
 }
 
-// ── Blue noise ──────────────────────────────────────────────
-const BN=64;
-const bnTile=(()=>{const d=new Float32Array(BN*BN);for(let y=0;y<BN;y++)for(let x=0;x<BN;x++)d[y*BN+x]=(52.9829189*((0.06711056*x+0.00583715*y)%1))%1;return d;})();
-function applyDither(v,px,py){const n=bnTile[(py%BN)*BN+(px%BN)];const t=n<0.5?Math.sqrt(2*n)-1:1-Math.sqrt(2-2*n);return Math.max(0,Math.min(1,v+t/255));}
+// ── Dither (interleaved gradient noise) ──────────────────────────────────────────────
+const DT=64;
+const ditherTile=(()=>{const d=new Float32Array(DT*DT);for(let y=0;y<DT;y++)for(let x=0;x<DT;x++)d[y*DT+x]=(52.9829189*((0.06711056*x+0.00583715*y)%1))%1;return d;})();
+function applyDither(v,px,py){const n=ditherTile[(py%DT)*DT+(px%DT)];const t=n<0.5?Math.sqrt(2*n)-1:1-Math.sqrt(2-2*n);return Math.max(0,Math.min(1,v+t/255));}
 
 // ── Colour temperature ──────────────────────────────────────
 function kelvinToRGB(K){
@@ -624,7 +692,6 @@ function render(){
   const res=parseInt($('resSelect').value);
   const type=$('typeSelect').value;
   const gamma=parseFloat($('gammaSlider').value);
-  const norm=$('normCheck').checked;
   const doDither=$('ditherCheck').checked;
   const doScale=$('autoScaleCheck').checked&&type!=='equirect';
   const doSoftEdge=$('softEdgeCheck').checked&&type!=='equirect';
@@ -707,7 +774,7 @@ function render(){
       } else {
         raw=sampleCookie(u,v);
       }
-      let val=norm?raw/gMax:raw/gMax;
+      let val=raw/gMax;
       // Apply gamma first, then softMask post-gamma
       val=Math.pow(Math.max(0,Math.min(1,val)),gExp)*softMask(u,v);
       if(doDither) val=applyDither(val,px,py);
@@ -808,6 +875,7 @@ function deriveEngineParams() {
   };
 }
 // ── Meta panel ───────────────────────────────────────────────
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function fmt4(v){return v!==null?v.toFixed(4)+' rad':'—';}
 function fmtDeg(v){return v!==null?(v*180/Math.PI).toFixed(1)+'°':'—';}
 
@@ -846,9 +914,9 @@ function showMeta(d) {
   if(d.colorTemp) h+=`<div class="mc"><div class="mv">${Math.round(d.colorTemp)} K</div><div class="ml">Colour temp</div></div>`;
   h+=`<div class="mc"><div class="mv">${criDisplay}</div><div class="ml">Colour rendering</div></div>`;
   if(d.lumFlux)   h+=`<div class="mc"><div class="mv">${Math.round(d.lumFlux).toLocaleString()} lm</div><div class="ml">Lumen flux</div></div>`;
-  if(d.luminaire) h+=`<div class="mc mw"><div class="mv" style="font-size:14px">${d.luminaire}</div><div class="ml">Luminaire</div></div>`;
-  if(d.lamp)      h+=`<div class="mc mw"><div class="mv" style="font-size:14px">${d.lamp}</div><div class="ml">Lamp</div></div>`;
-  if(d.manufacturer) h+=`<div class="mc mw"><div class="mv" style="font-size:14px">${d.manufacturer}</div><div class="ml">Manufacturer</div></div>`;
+  if(d.luminaire) h+=`<div class="mc mw"><div class="mv" style="font-size:14px">${esc(d.luminaire)}</div><div class="ml">Luminaire</div></div>`;
+  if(d.lamp)      h+=`<div class="mc mw"><div class="mv" style="font-size:14px">${esc(d.lamp)}</div><div class="ml">Lamp</div></div>`;
+  if(d.manufacturer) h+=`<div class="mc mw"><div class="mv" style="font-size:14px">${esc(d.manufacturer)}</div><div class="ml">Manufacturer</div></div>`;
 
   $('metaGrid').innerHTML = h;
   $('metaSection').style.display = 'block';
@@ -895,3 +963,5 @@ $('downloadBtn').onclick=()=>{
   a.click();
 };
 </script>
+</body>
+</html>

@@ -19,10 +19,9 @@ Everything runs locally in your browser. No files are uploaded anywhere.
 - **Live preview** on light and dark backgrounds.
 - **Base controls**
   - Gamma
-  - Peak-candela normalisation
   - Auto-scale beam to fill the texture
   - Soft edge falloff with adjustable width
-  - Blue noise dithering to reduce banding
+  - Gradient noise dithering to reduce banding
 - **Lens effects** (full colour mode): colour temperature (1800–8000 K), chromatic aberration, vignette, lens dirt/dust, edge fringe glow, Fresnel rings, and haze. Presets: None, Fresnel, Flat / PC, PAR / reflector, Vintage / hazy.
 - **Lamp data readout**: peak candela, angle counts, beam angle (50% of peak), field angle (10% of peak), projector FOV (radians and degrees), watts, colour temperature, CRI, lumen flux, and luminaire/lamp/manufacturer info where the file provides it.
 - **Second Life spotlight parameters**: suggested radius, falloff, and intensity from your wall distance and clip depth.
@@ -69,12 +68,18 @@ The photometric data is sampled over the 0–90° range from the lamp's axis and
 
 | Format | Extension | Notes |
 |--------|-----------|-------|
-| IES | `.ies` | Standard IESNA photometric files |
+| IES | `.ies` | Standard IESNA LM-63 files; tilt data is skipped, not applied |
 | EULUMDAT | `.ldt` | Symmetry modes 0–4 supported |
+
+Files are validated on load, and malformed input (truncated data, unsorted angles, implausible angle counts, unsupported extensions) is rejected with an error message.
 
 ## Browser support
 
 Any modern browser with HTML5 canvas and the File API (current Chrome, Firefox, Edge, Safari).
+
+## Deployment
+
+The live demo is deployed by GitHub Actions (`.github/workflows/pages.yml`) on every push to `main`. The workflow stamps the commit hash into the page footer, which links to that commit. Local copies show `dev` instead.
 
 ## Contributing
 
