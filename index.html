@@ -169,7 +169,7 @@
   <input type="file" id="fileInput" accept=".ies,.ldt"/>
   <div class="drop-icon">💡</div>
   <div class="drop-title" style="color:#e8e6df">Drop an IES or LDT file here</div>
-  <div class="drop-sub">or <span style="color:var(--color-text-info);cursor:pointer" id="browseBtn">browse</span> — .ies and .ldt supported</div>
+  <div class="drop-sub">or <span style="color:var(--color-text-info);cursor:pointer" id="browseBtn">browse</span> - .ies and .ldt supported</div>
 </div>
 
 <div class="section-title">Output</div>
@@ -216,7 +216,7 @@
     <label>Wall clip depth (m)</label>
     <input type="number" id="clipDepthInput" min="0.001" max="5" step="0.001" value="0.5"
       style="width:80px;flex:0 0 auto;padding:6px 9px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);font-size:14px;font-family:var(--font-sans)"/>
-    <span style="font-size:12px;color:var(--color-text-tertiary);flex:1">how far radius extends past wall — less = thinner-wall safe, dimmer</span>
+    <span style="font-size:12px;color:var(--color-text-tertiary);flex:1">how far radius extends past wall - less = thinner-wall safe, dimmer</span>
   </div>
 </div>
 <div class="panel" id="lensPanel" style="display:none">
@@ -558,7 +558,7 @@ function parseLDT(text){
 // All use central C-plane (index 0). Returns angle in radians for full cone (2 * half-angle).
 
 // Beam angle: 50% of peak (standard "beam angle" definition).
-// Clamped to 90° half-angle — the IES→cookie mapping only samples 0–90°,
+// Clamped to 90° half-angle - the IES→cookie mapping only samples 0–90°,
 // so angles beyond 90° are outside the projection disc and irrelevant.
 function computeBeamFOV(data){
   const vA=data.vertAngles, row=data.candela[0];
@@ -566,7 +566,7 @@ function computeBeamFOV(data){
   let peak=0; row.forEach(v=>{if(v>peak)peak=v;});
   if(peak===0) return null;
   for(let i=0;i<vA.length-1;i++){
-    if(vA[i]>=90) break; // stop at 90° — beyond the projection disc
+    if(vA[i]>=90) break; // stop at 90° - beyond the projection disc
     if(row[i]/peak>=0.5&&row[i+1]/peak<0.5){
       const t=(0.5-row[i]/peak)/(row[i+1]/peak-row[i]/peak);
       return 2*(vA[i]+t*(vA[i+1]-vA[i]))*Math.PI/180;
@@ -583,7 +583,7 @@ function computeFieldFOV(data){
   let peak=0; row.forEach(v=>{if(v>peak)peak=v;});
   if(peak===0) return null;
   for(let i=0;i<vA.length-1;i++){
-    if(vA[i]>=90) break; // stop at 90° — beyond the projection disc
+    if(vA[i]>=90) break; // stop at 90° - beyond the projection disc
     if(row[i]/peak>=0.1&&row[i+1]/peak<0.1){
       const t=(0.1-row[i]/peak)/(row[i+1]/peak-row[i]/peak);
       return 2*(vA[i]+t*(vA[i+1]-vA[i]))*Math.PI/180;
@@ -713,14 +713,14 @@ function render(){
     return sampleData(data,r*90,(Math.atan2(sv,su)*180/Math.PI+360)%360);
   }
 
-  // softMask in r_OUTPUT space (no sf division) — fades the texture disc boundary.
+  // softMask in r_OUTPUT space (no sf division) - fades the texture disc boundary.
   // Applied POST-GAMMA: multiply the already-gamma-encoded value by the mask.
   // This suppresses the gamma-amplified dim tail near r=1 far more effectively
   // than pre-gamma masking, because post-gamma values are already in perceptual
   // space where the mask's linear taper matches visual smoothness.
   function softMask(u,v){
     if(!doSoftEdge) return 1.0;
-    const r=Math.sqrt(u*u+v*v); // r_OUTPUT — no sf division
+    const r=Math.sqrt(u*u+v*v); // r_OUTPUT - no sf division
     const inner=1.0-softWidth;
     if(r<=inner) return 1.0;
     if(r>=1.0)   return 0.0;
@@ -802,15 +802,15 @@ function render(){
 //   dist_atten = dist_atten * dist_atten * 2.0
 //
 // This simplifies to: sl_atten(s, f) = (1−s)² × 2 / (1+f)²
-// Falloff is a pure brightness scalar 1/(1+f)² — it does not change curve shape.
+// Falloff is a pure brightness scalar 1/(1+f)² - it does not change curve shape.
 // f and intensity are interchangeable; we prefer to adjust f to keep intensity=1.0.
 //
 // Condition: compare physReach vs RADIUS (not vs distWall).
-//   physReach >= radius: lamp fills the entire light volume — f=0, intensity=1.0.
+//   physReach >= radius: lamp fills the entire light volume - f=0, intensity=1.0.
 //   physReach <  radius: physical reach is inside the volume. Two sub-cases:
-//     distWall <= physReach < radius: wall is within reach, clip region is beyond —
+//     distWall <= physReach < radius: wall is within reach, clip region is beyond -
 //       f=0 (lamp reaches wall fine, just the clip region is dark)
-//     physReach < distWall: wall is beyond physical reach —
+//     physReach < distWall: wall is beyond physical reach -
 //       f = distWall/physReach − 1  (scales brightness to match real-world deficit)
 //       If f_ideal > 2.0 (SL max): use f=2, then scale intensity by (1+2)²/(1+f_ideal)²
 //       so that sl_atten(s,2)*intensity exactly matches sl_atten(s,f_ideal)*1.0.
@@ -837,7 +837,7 @@ function deriveEngineParams() {
     falloff      = 0.0;
     intensity    = 1.0;
   } else {
-    // Weak lamp: wall is beyond physical reach — scale brightness
+    // Weak lamp: wall is beyond physical reach - scale brightness
     falloffIdeal = distWall / physReach - 1.0;
     if (falloffIdeal <= SL_MAX_FALLOFF) {
       falloff   = falloffIdeal;
@@ -877,8 +877,8 @@ function deriveEngineParams() {
 }
 // ── Meta panel ───────────────────────────────────────────────
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function fmt4(v){return v!==null?v.toFixed(4)+' rad':'—';}
-function fmtDeg(v){return v!==null?(v*180/Math.PI).toFixed(1)+'°':'—';}
+function fmt4(v){return v!==null?v.toFixed(4)+' rad':'-';}
+function fmtDeg(v){return v!==null?(v*180/Math.PI).toFixed(1)+'°':'-';}
 
 function showMeta(d) {
   const nV = d.vertAngles.length, nH = d.horizAngles.length;
@@ -900,15 +900,15 @@ function showMeta(d) {
 
   // ── Photometric data cards ──
   let h = `
-    <div class="mc"><div class="mv">${isFinite(maxCd)?Math.round(maxCd).toLocaleString():'—'}</div><div class="ml">Peak candela</div></div>
+    <div class="mc"><div class="mv">${isFinite(maxCd)?Math.round(maxCd).toLocaleString():'-'}</div><div class="ml">Peak candela</div></div>
     <div class="mc"><div class="mv">${nV} / ${nH}</div><div class="ml">V / H angles</div></div>
     <div class="mc"><div class="mv">${d.vertAngles[0]?.toFixed(0)}–${d.vertAngles[nV-1]?.toFixed(0)}°</div><div class="ml">Vertical range</div></div>
-    <div class="mc"><div class="mv">${fmt4(beamFOV)}</div><div class="ml">Beam FOV 50% — rads</div></div>
-    <div class="mc"><div class="mv">${fmtDeg(beamFOV)}</div><div class="ml">Beam FOV 50% — deg</div></div>
-    <div class="mc"><div class="mv">${fmt4(fieldFOV)}</div><div class="ml">Field angle 10% — rads</div></div>
-    <div class="mc"><div class="mv">${fmtDeg(fieldFOV)}</div><div class="ml">Field angle 10% — deg</div></div>
-    <div class="mc mc-highlight"><div class="mv mv-highlight">${fmt4(projFOV)}</div><div class="ml">${projLabel} — rads</div></div>
-    <div class="mc mc-highlight"><div class="mv mv-highlight">${fmtDeg(projFOV)}</div><div class="ml">${projLabel} — deg</div></div>
+    <div class="mc"><div class="mv">${fmt4(beamFOV)}</div><div class="ml">Beam FOV 50% - rads</div></div>
+    <div class="mc"><div class="mv">${fmtDeg(beamFOV)}</div><div class="ml">Beam FOV 50% - deg</div></div>
+    <div class="mc"><div class="mv">${fmt4(fieldFOV)}</div><div class="ml">Field angle 10% - rads</div></div>
+    <div class="mc"><div class="mv">${fmtDeg(fieldFOV)}</div><div class="ml">Field angle 10% - deg</div></div>
+    <div class="mc mc-highlight"><div class="mv mv-highlight">${fmt4(projFOV)}</div><div class="ml">${projLabel} - rads</div></div>
+    <div class="mc mc-highlight"><div class="mv mv-highlight">${fmtDeg(projFOV)}</div><div class="ml">${projLabel} - deg</div></div>
     <div class="mc"><div class="mv">${sfDisplay}</div><div class="ml">Auto-scale factor</div></div>`;
 
   if(d.watts)     h+=`<div class="mc"><div class="mv">${d.watts} W</div><div class="ml">Watts</div></div>`;
@@ -925,7 +925,7 @@ function showMeta(d) {
   // ── Engine params card ──
   let eng = `<div class="section-title">Engine parameters</div>
     <div class="engine-card">
-      <div class="engine-card-title">Second Life spotlight — wall: ${ep.distWall.toFixed(2)} m, clip: ${(ep.clipDepth*100).toFixed(1)} cm</div>
+      <div class="engine-card-title">Second Life spotlight - wall: ${ep.distWall.toFixed(2)} m, clip: ${(ep.clipDepth*100).toFixed(1)} cm</div>
       <div class="engine-params">
         <div class="ep"><div class="ev">${ep.radius.toFixed(4)}</div><div class="el">Radius</div></div>
         <div class="ep"><div class="ev">${ep.falloff.toFixed(4)}</div><div class="el">Falloff</div></div>
@@ -937,7 +937,7 @@ function showMeta(d) {
       </div>`;
   if(ep.isWeak && !ep.isFalloffClamped){
     eng+=`<div class="engine-note" style="margin-top:8px;background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)">
-      ℹ Weak lamp — physical reach (${ep.physReach.toFixed(2)} m) is less than wall distance (${ep.distWall.toFixed(2)} m).
+      ℹ Weak lamp - physical reach (${ep.physReach.toFixed(2)} m) is less than wall distance (${ep.distWall.toFixed(2)} m).
       Falloff set to ${ep.falloff.toFixed(4)} to match real-world brightness at this distance. Intensity remains 1.0.
     </div>`;
   }
@@ -945,7 +945,7 @@ function showMeta(d) {
     eng+=`<div class="engine-note" style="margin-top:8px">
       ⚠ Lamp is too weak for falloff alone to compensate (ideal falloff ${ep.falloffIdeal.toFixed(2)} exceeds SL max of 2.0).
       Falloff capped at 2.0; intensity reduced to ${ep.intensity.toFixed(4)} to maintain correct wall brightness.
-      Max wall distance where falloff alone suffices: ${ep.maxRangeFalloffOnly !== null ? ep.maxRangeFalloffOnly.toFixed(2)+' m' : '—'}.
+      Max wall distance where falloff alone suffices: ${ep.maxRangeFalloffOnly !== null ? ep.maxRangeFalloffOnly.toFixed(2)+' m' : '-'}.
     </div>`;
   }
   if(ep.isRadiusClamped){
