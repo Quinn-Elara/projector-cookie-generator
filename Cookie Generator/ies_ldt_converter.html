@@ -1,0 +1,897 @@
+
+<style>
+  /* ── CSS variable fallbacks for standalone use ── */
+  :root{
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'SF Mono', 'Fira Code', monospace;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --border-radius-xl: 16px;
+    /* Light mode */
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f5f4f0;
+    --color-background-tertiary: #eeede8;
+    --color-background-info: #e6f1fb;
+    --color-background-success: #eaf3de;
+    --color-background-warning: #faeeda;
+    --color-background-danger: #fcebeb;
+    --color-text-primary: #1a1a18;
+    --color-text-secondary: #5f5e5a;
+    --color-text-tertiary: #888780;
+    --color-text-info: #185fa5;
+    --color-text-success: #3b6d11;
+    --color-text-warning: #854f0b;
+    --color-text-danger: #a32d2d;
+    --color-border-tertiary: rgba(26,26,24,0.12);
+    --color-border-secondary: rgba(26,26,24,0.25);
+    --color-border-primary: rgba(26,26,24,0.38);
+    --color-border-info: rgba(24,95,165,0.4);
+    --color-border-warning: rgba(133,79,11,0.35);
+    --color-border-danger: rgba(163,45,45,0.35);
+    --color-border-success: rgba(59,109,17,0.35);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --color-background-primary: #1c1c1a;
+      --color-background-secondary: #242422;
+      --color-background-tertiary: #2c2c2a;
+      --color-background-info: #042c53;
+      --color-background-success: #173404;
+      --color-background-warning: #412402;
+      --color-background-danger: #501313;
+      --color-text-primary: #f0ede4;
+      --color-text-secondary: #b4b2a9;
+      --color-text-tertiary: #888780;
+      --color-text-info: #85b7eb;
+      --color-text-success: #97c459;
+      --color-text-warning: #ef9f27;
+      --color-text-danger: #f09595;
+      --color-border-tertiary: rgba(240,237,228,0.12);
+      --color-border-secondary: rgba(240,237,228,0.25);
+      --color-border-primary: rgba(240,237,228,0.38);
+      --color-border-info: rgba(133,183,235,0.4);
+      --color-border-warning: rgba(239,159,39,0.4);
+      --color-border-danger: rgba(240,149,149,0.4);
+      --color-border-success: rgba(151,196,89,0.4);
+    }
+  }
+
+  /* ── Layout ── */
+  .root{padding:1.5rem 0;font-family:var(--font-sans);max-width:75%;margin:0 auto}
+  .section-title{font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-text-tertiary);margin:1.5rem 0 0.5rem;padding-bottom:6px;border-bottom:0.5px solid var(--color-border-tertiary)}
+  .section-title:first-child{margin-top:0}
+
+  /* ── Drop zone ── */
+  .drop-zone{border:1.5px dashed var(--color-border-secondary);border-radius:var(--border-radius-lg);padding:2rem 1.5rem;text-align:center;cursor:pointer;background:var(--color-background-secondary);margin-bottom:1.25rem;transition:border-color 0.15s,background 0.15s}
+  .drop-zone:hover{border-color:var(--color-border-primary);background:var(--color-background-primary)}
+  .drop-zone.drag-over{border-color:var(--color-border-info);background:var(--color-background-info)}
+  .drop-zone input{display:none}
+  .drop-icon{font-size:28px;margin-bottom:8px;opacity:0.7}
+  .drop-title{font-weight:500;font-size:15px;margin-bottom:4px}
+  .drop-sub{font-size:13px;color:var(--color-text-secondary)}
+
+  /* ── Controls row ── */
+  .controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem}
+  .ctrl{display:flex;flex-direction:column;gap:5px}
+  .ctrl label,.lbl{font-size:12px;font-weight:500;color:var(--color-text-secondary);letter-spacing:0.02em}
+  select{padding:7px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);font-size:14px;width:100%}
+
+  /* ── Panels ── */
+  .panel{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.1rem;margin-bottom:1rem;background:var(--color-background-secondary)}
+  .pt{font-size:12px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-text-tertiary);margin-bottom:12px;padding-bottom:8px;border-bottom:0.5px solid var(--color-border-tertiary)}
+  hr.dv{border:none;border-top:0.5px solid var(--color-border-tertiary);margin:10px 0}
+
+  /* ── Slider rows ── */
+  .sr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .sr label{font-size:13px;color:var(--color-text-secondary);min-width:168px;flex-shrink:0}
+  .sr input[type=range]{flex:1}
+  .sv{font-size:13px;font-weight:500;min-width:48px;text-align:right;color:var(--color-text-primary)}
+
+  /* ── Toggle rows ── */
+  .tr{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:6px 8px;border-radius:var(--border-radius-md);transition:background 0.1s}
+  .tr:hover{background:var(--color-background-primary)}
+  .tr label{font-size:13px;color:var(--color-text-secondary);flex:1;cursor:pointer}
+  .tr input[type=checkbox]{width:16px;height:16px;cursor:pointer;flex-shrink:0;accent-color:var(--color-text-primary)}
+
+  /* ── Badges ── */
+  .badge{display:inline-block;font-size:10px;padding:2px 6px;border-radius:var(--border-radius-md);margin-left:5px;font-weight:500;background:var(--color-background-info);color:var(--color-text-info);vertical-align:middle}
+  .badge-warn{background:var(--color-background-warning);color:var(--color-text-warning)}
+  .badge-ok{background:var(--color-background-success);color:var(--color-text-success)}
+
+  /* ── Preset buttons ── */
+  .presets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .preset-btn{padding:5px 12px;font-size:12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-secondary);cursor:pointer;transition:all 0.1s}
+  .preset-btn:hover{border-color:var(--color-border-primary);color:var(--color-text-primary)}
+  .preset-btn.active{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary)}
+
+  /* ── Preview ── */
+  .preview-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:1.5rem}
+  .pb{background:var(--color-background-secondary);border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary);padding:12px;text-align:center}
+  .pb canvas{max-width:100%;display:block;margin:0 auto;border-radius:6px;image-rendering:pixelated}
+  .pl{font-size:12px;color:var(--color-text-secondary);margin-top:8px;font-weight:500}
+  .pb-dark{background:#0a0a0a;border-color:#222}
+
+  /* ── Meta grid ── */
+  .mg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem}
+  .mc{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px;border:0.5px solid var(--color-border-tertiary)}
+  .mc-highlight{border-color:var(--color-border-info);background:var(--color-background-info)}
+  .mc-warn{border-color:var(--color-border-warning);background:var(--color-background-warning)}
+  .mv{font-size:15px;font-weight:500;word-break:break-all;color:var(--color-text-primary)}
+  .mv-highlight{color:var(--color-text-info)}
+  .mv-warn{color:var(--color-text-warning)}
+  .ml{font-size:11px;color:var(--color-text-secondary);margin-top:3px;font-weight:500;letter-spacing:0.02em}
+  .mw{grid-column:1/-1}
+  .mc-full{grid-column:1/-1;padding:12px 14px}
+
+  /* ── Engine params card ── */
+  .engine-card{border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary);padding:12px 14px;margin-bottom:1rem;background:var(--color-background-secondary)}
+  .engine-card-title{font-size:12px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-text-tertiary);margin-bottom:10px}
+  .engine-params{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+  .ep{background:var(--color-background-primary);border-radius:var(--border-radius-md);padding:9px 11px;border:0.5px solid var(--color-border-tertiary)}
+  .ev{font-size:15px;font-weight:500;color:var(--color-text-primary)}
+  .el{font-size:11px;color:var(--color-text-secondary);margin-top:3px;font-weight:500;letter-spacing:0.02em}
+  .engine-note{font-size:12px;padding:8px 10px;border-radius:var(--border-radius-md);background:var(--color-background-warning);color:var(--color-text-warning);border:0.5px solid var(--color-border-warning);line-height:1.5}
+
+  /* ── Buttons & status ── */
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:4px}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 20px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);font-size:14px;cursor:pointer;transition:background 0.1s}
+  .btn:hover{background:var(--color-background-secondary)}
+  .btn.primary{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary)}
+  .btn.primary:hover{opacity:.85}
+  .btn:disabled{opacity:.35;cursor:default}
+  .status{font-size:13px;color:var(--color-text-secondary);margin-top:10px;min-height:18px}
+  .error{color:var(--color-text-danger)!important}
+  .muted{color:var(--color-text-tertiary)}
+  body,html{background:#111;margin:0;padding:0}
+</style>
+<div class="root">
+<div style="text-align:center;margin-bottom:1.75rem">
+  <h1 style="font-size:26px;font-weight:500;color:#e8e6df;margin:0 0 6px">Photometric Cookie Generator</h1>
+  <p style="font-size:14px;color:#888780;margin:0">IES / LDT to PNG texture converter</p>
+</div>
+<div class="drop-zone" id="dropZone">
+  <input type="file" id="fileInput" accept=".ies,.ldt"/>
+  <div class="drop-icon">💡</div>
+  <div class="drop-title" style="color:#e8e6df">Drop an IES or LDT file here</div>
+  <div class="drop-sub">or <span style="color:var(--color-text-info);cursor:pointer" id="browseBtn">browse</span> — .ies and .ldt supported</div>
+</div>
+
+<div class="section-title">Output</div>
+<div class="controls">
+  <div class="ctrl"><label>Resolution</label>
+    <select id="resSelect">
+      <option value="128">128 × 128</option><option value="256">256 × 256</option>
+      <option value="512" selected>512 × 512</option><option value="1024">1024 × 1024</option>
+      <option value="2048">2048 × 2048</option>
+    </select>
+  </div>
+  <div class="ctrl"><label>Texture type</label>
+    <select id="typeSelect">
+      <option value="cookie">Cookie / gobo (greyscale)</option>
+      <option value="equirect">Equirectangular panorama</option>
+      <option value="colour">Full colour (lens effects)</option>
+    </select>
+  </div>
+</div>
+
+<div class="section-title">Settings</div>
+<div class="panel">
+  <div class="pt">Base</div>
+  <div class="sr"><label>Gamma</label>
+    <input type="range" id="gammaSlider" min="0.3" max="3.0" step="0.05" value="1.0"/>
+    <span class="sv" id="gammaVal">1.00</span>
+  </div>
+  <div class="tr"><label>Normalise to peak candela</label><input type="checkbox" id="normCheck" checked/></div>
+  <div class="tr"><label>Auto-scale beam to fill texture <span class="badge">smart</span></label><input type="checkbox" id="autoScaleCheck"/></div>
+  <div class="tr"><label>Soft edge falloff <span class="badge">smooth</span></label><input type="checkbox" id="softEdgeCheck"/></div>
+  <div class="sr" id="softEdgeRow" style="display:none">
+    <label>Falloff width</label>
+    <input type="range" id="softEdgeSlider" min="0.01" max="0.5" step="0.01" value="0.1"/>
+    <span class="sv" id="softEdgeVal">0.10</span>
+  </div>
+  <div class="tr"><label>Blue noise dithering <span class="badge">quality</span></label><input type="checkbox" id="ditherCheck"/></div>
+  <hr class="dv">
+  <div class="sr">
+    <label>Distance to wall (m)</label>
+    <input type="number" id="distWallInput" min="0.1" max="100" step="0.1" value="5.0"
+      style="width:80px;flex:0 0 auto;padding:6px 9px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);font-size:14px;font-family:var(--font-sans)"/>
+    <span style="font-size:12px;color:var(--color-text-tertiary);flex:1">projection distance</span>
+  </div>
+  <div class="sr">
+    <label>Wall clip depth (m)</label>
+    <input type="number" id="clipDepthInput" min="0.001" max="5" step="0.001" value="0.5"
+      style="width:80px;flex:0 0 auto;padding:6px 9px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);font-size:14px;font-family:var(--font-sans)"/>
+    <span style="font-size:12px;color:var(--color-text-tertiary);flex:1">how far radius extends past wall — less = thinner-wall safe, dimmer</span>
+  </div>
+</div>
+<div class="panel" id="lensPanel" style="display:none">
+  <div class="pt">Lens effects</div>
+  <div class="lbl" style="margin-bottom:8px">Preset</div>
+  <div class="presets">
+    <button class="preset-btn active" data-preset="none">None</button>
+    <button class="preset-btn" data-preset="fresnel">Fresnel</button>
+    <button class="preset-btn" data-preset="flat">Flat / PC</button>
+    <button class="preset-btn" data-preset="par">PAR / reflector</button>
+    <button class="preset-btn" data-preset="vintage">Vintage / hazy</button>
+  </div>
+  <hr class="dv">
+  <div class="sr"><label>Colour temperature (K)</label>
+    <input type="range" id="ctSlider" min="1800" max="8000" step="50" value="3200"/>
+    <span class="sv" id="ctVal">3200 K</span>
+  </div>
+  <hr class="dv">
+  <div class="sr"><label>Chromatic aberration</label>
+    <input type="range" id="caSlider" min="0" max="1" step="0.01" value="0.0"/>
+    <span class="sv" id="caVal">0.00</span>
+  </div>
+  <div class="sr"><label>CA radial bias</label>
+    <input type="range" id="caBiasSlider" min="0" max="1" step="0.01" value="0.6"/>
+    <span class="sv" id="caBiasVal">0.60</span>
+  </div>
+  <hr class="dv">
+  <div class="sr"><label>Vignette strength</label>
+    <input type="range" id="vigSlider" min="0" max="1" step="0.01" value="0.0"/>
+    <span class="sv" id="vigVal">0.00</span>
+  </div>
+  <div class="sr"><label>Vignette softness</label>
+    <input type="range" id="vigSoftSlider" min="0.5" max="4" step="0.05" value="2.0"/>
+    <span class="sv" id="vigSoftVal">2.00</span>
+  </div>
+  <hr class="dv">
+  <div class="sr"><label>Lens dirt / dust</label>
+    <input type="range" id="dirtSlider" min="0" max="1" step="0.01" value="0.0"/>
+    <span class="sv" id="dirtVal">0.00</span>
+  </div>
+  <div class="sr"><label>Dirt seed</label>
+    <input type="range" id="dirtSeedSlider" min="1" max="99" step="1" value="42"/>
+    <span class="sv" id="dirtSeedVal">42</span>
+  </div>
+  <hr class="dv">
+  <div class="sr"><label>Fringe (edge glow)</label>
+    <input type="range" id="fringeSlider" min="0" max="1" step="0.01" value="0.0"/>
+    <span class="sv" id="fringeVal">0.00</span>
+  </div>
+  <hr class="dv">
+  <div class="sr"><label>Fresnel ring contrast</label>
+    <input type="range" id="fresnelSlider" min="0" max="1" step="0.01" value="0.0"/>
+    <span class="sv" id="fresnelVal">0.00</span>
+  </div>
+  <div class="sr"><label>Fresnel ring frequency</label>
+    <input type="range" id="fresnelFreqSlider" min="2" max="30" step="0.5" value="10"/>
+    <span class="sv" id="fresnelFreqVal">10.0</span>
+  </div>
+  <hr class="dv">
+  <div class="sr"><label>Haze / diffusion</label>
+    <input type="range" id="hazeSlider" min="0" max="1" step="0.01" value="0.0"/>
+    <span class="sv" id="hazeVal">0.00</span>
+  </div>
+</div>
+<div id="metaSection" style="display:none">
+  <div class="section-title">Lamp data</div>
+  <div class="mg" id="metaGrid"></div>
+  <div id="engineSection"></div>
+</div>
+<div id="previewSection" style="display:none">
+  <div class="section-title">Preview</div>
+  <div class="preview-row">
+    <div class="pb"><canvas id="previewCanvas"></canvas><div class="pl" id="previewLabel">Preview</div></div>
+    <div class="pb pb-dark"><canvas id="previewDark"></canvas><div class="pl" style="color:#666">On dark background</div></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button class="btn primary" id="downloadBtn" disabled>Download PNG</button>
+  <button class="btn" id="resetBtn">Reset</button>
+</div>
+<div class="status" id="statusEl">No file loaded.</div>
+<div style="text-align:center;margin-top:2rem;padding-top:1rem;border-top:0.5px solid var(--color-border-tertiary)">
+  <span style="font-size:11px;color:#444441">v20</span>
+</div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+let parsedData=null, fileFormat=null, outputFilename='ies_texture.png';
+let lastScaleFactor=1.0; // persisted from render for meta display
+let lastProjFOV=null;    // persisted from showMeta for filename
+
+// ── Presets ─────────────────────────────────────────────────
+const PRESETS={
+  none:   {ca:0,   caBias:0.6,vig:0,   vigSoft:2,  dirt:0,   fringe:0,   fresnel:0,   fresnelFreq:10,haze:0},
+  fresnel:{ca:0.08,caBias:0.7,vig:0.15,vigSoft:1.5,dirt:0.05,fringe:0.1, fresnel:0.35,fresnelFreq:12,haze:0.05},
+  flat:   {ca:0.04,caBias:0.5,vig:0.25,vigSoft:2.5,dirt:0.08,fringe:0.05,fresnel:0,   fresnelFreq:10,haze:0.02},
+  par:    {ca:0.12,caBias:0.8,vig:0.4, vigSoft:1.8,dirt:0.12,fringe:0.2, fresnel:0,   fresnelFreq:10,haze:0.03},
+  vintage:{ca:0.2, caBias:0.6,vig:0.35,vigSoft:1.2,dirt:0.25,fringe:0.15,fresnel:0.05,fresnelFreq:8, haze:0.2},
+};
+const PF={ca:v=>v.toFixed(2),caBias:v=>v.toFixed(2),vig:v=>v.toFixed(2),vigSoft:v=>v.toFixed(2),
+          dirt:v=>v.toFixed(2),fringe:v=>v.toFixed(2),fresnel:v=>v.toFixed(2),
+          fresnelFreq:v=>v.toFixed(1),haze:v=>v.toFixed(2)};
+const PI2={ca:'caSlider',caBias:'caBiasSlider',vig:'vigSlider',vigSoft:'vigSoftSlider',
+           dirt:'dirtSlider',fringe:'fringeSlider',fresnel:'fresnelSlider',
+           fresnelFreq:'fresnelFreqSlider',haze:'hazeSlider'};
+const PV={ca:'caVal',caBias:'caBiasVal',vig:'vigVal',vigSoft:'vigSoftVal',
+          dirt:'dirtVal',fringe:'fringeVal',fresnel:'fresnelVal',
+          fresnelFreq:'fresnelFreqVal',haze:'hazeVal'};
+document.querySelectorAll('.preset-btn').forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const p=PRESETS[btn.dataset.preset];
+    for(const k in p){$(PI2[k]).value=p[k];$(PV[k]).textContent=PF[k](p[k]);}
+    if(parsedData) render();
+  };
+});
+
+// ── Sliders / toggles ───────────────────────────────────────
+[['gammaSlider','gammaVal',v=>v.toFixed(2)],
+ ['softEdgeSlider','softEdgeVal',v=>v.toFixed(2)],
+ ['ctSlider','ctVal',v=>Math.round(v)+' K'],
+ ['caSlider','caVal',v=>v.toFixed(2)],['caBiasSlider','caBiasVal',v=>v.toFixed(2)],
+ ['vigSlider','vigVal',v=>v.toFixed(2)],['vigSoftSlider','vigSoftVal',v=>v.toFixed(2)],
+ ['dirtSlider','dirtVal',v=>v.toFixed(2)],['dirtSeedSlider','dirtSeedVal',v=>Math.round(v)+''],
+ ['fringeSlider','fringeVal',v=>v.toFixed(2)],
+ ['fresnelSlider','fresnelVal',v=>v.toFixed(2)],['fresnelFreqSlider','fresnelFreqVal',v=>v.toFixed(1)],
+ ['hazeSlider','hazeVal',v=>v.toFixed(2)],
+].forEach(([s,v,f])=>{ $(s).oninput=()=>{$(v).textContent=f(parseFloat($(s).value));if(parsedData)render();}; });
+['normCheck','ditherCheck','autoScaleCheck','softEdgeCheck'].forEach(id=>{
+  $(id).onchange=()=>{ if(id==='softEdgeCheck') $('softEdgeRow').style.display=$(id).checked?'flex':'none'; if(parsedData)render(); };
+});
+$('typeSelect').onchange=()=>{ $('lensPanel').style.display=$('typeSelect').value==='colour'?'block':'none'; $('previewLabel').textContent=$('typeSelect').value==='colour'?'Preview (colour)':'Preview (linear)'; if(parsedData)render(); };
+$('resSelect').onchange=()=>{ if(parsedData)render(); };
+$('distWallInput').oninput=()=>{ if(parsedData) showMeta(parsedData); };
+$('clipDepthInput').oninput=()=>{ if(parsedData) showMeta(parsedData); };
+
+// ── File I/O ────────────────────────────────────────────────
+const dz=$('dropZone');
+$('browseBtn').onclick=()=>$('fileInput').click();
+dz.onclick=e=>{if(e.target!==$('browseBtn'))$('fileInput').click();};
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});
+$('fileInput').onchange=()=>{if($('fileInput').files[0])handleFile($('fileInput').files[0]);};
+$('resetBtn').onclick=()=>{
+  parsedData=null;fileFormat=null;outputFilename='ies_texture.png';lastScaleFactor=1;lastProjFOV=null;
+  $('previewSection').style.display='none';$('metaSection').style.display='none';
+  $('downloadBtn').disabled=true;$('statusEl').textContent='No file loaded.';
+  $('statusEl').className='status';$('fileInput').value='';
+};
+function sanitise(s){return(s||'').replace(/[^a-zA-Z0-9_\-]/g,' ').replace(/\s+/g,' ').trim().replace(/\s/g,'_');}
+function buildFilename(d){
+  const m=sanitise(d.manufacturer),l=sanitise(d.lamp||d.luminaire||d.lumcat);
+  const suf=$('typeSelect').value==='colour'?'_colour':'';
+  // Append projector FOV in radians if available, rounded to 4 decimal places
+  const fovSuf=lastProjFOV!==null?'_FOV-'+lastProjFOV.toFixed(4).replace('.','p'):'';
+  let base;
+  if(m&&l) base=m+'-'+l; else if(m) base=m; else if(l) base=l; else base='ies_texture';
+  return base+suf+fovSuf+'_cookie.png';
+}
+function handleFile(file){
+  const ext=file.name.split('.').pop().toLowerCase();
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const bytes=new Uint8Array(e.target.result);
+      let text=''; for(let i=0;i<bytes.length;i++) text+=String.fromCharCode(bytes[i]);
+      parsedData=ext==='ldt'?parseLDT(text):parseIES(text);
+      fileFormat=ext;
+      render(); // render() also calls showMeta internally
+      outputFilename=buildFilename(parsedData);
+      $('statusEl').textContent='Loaded: '+file.name+' ('+(ext==='ldt'?'LDT':'IES')+')';
+      $('statusEl').className='status';
+    }catch(err){
+      $('statusEl').textContent='Error: '+err.message;
+      $('statusEl').className='status error';
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ── IES parser ──────────────────────────────────────────────
+function parseIES(text){
+  const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length>0);
+  let dataStart=-1; const meta={};
+  for(let i=0;i<lines.length;i++){
+    if(lines[i].startsWith('TILT=')){dataStart=i+1;break;}
+    const m=lines[i].match(/^\[([^\]]+)\]\s*(.*)/);
+    if(m) meta[m[1]]=m[2];
+  }
+  if(dataStart<0) throw new Error('No TILT= line found');
+  const tok=[];
+  for(let i=dataStart;i<lines.length;i++)
+    lines[i].split(/[\s,]+/).forEach(t=>{if(t.length>0&&isFinite(t))tok.push(parseFloat(t));});
+  let i=0; i++;i++;
+  const cm=tok[i++],nV=Math.round(tok[i++]),nH=Math.round(tok[i++]);
+  const pType=Math.round(tok[i++]);
+  i+=4; const bf=tok[i++]; i+=2;
+  const vA=[]; for(let j=0;j<nV;j++) vA.push(tok[i++]);
+  const hA=[]; for(let j=0;j<nH;j++) hA.push(tok[i++]);
+  const cd=[];
+  for(let h=0;h<nH;h++){const row=[];for(let v=0;v<nV;v++) row.push((tok[i++]||0)*cm*bf);cd.push(row);}
+  let ct=null;
+  if(meta['CCT']) ct=parseFloat(meta['CCT']);
+  else if(meta['COLOR']){const m2=meta['COLOR'].match(/(\d{3,5})/);if(m2)ct=parseFloat(m2[1]);}
+  let mfr=meta['MANUFAC']||null;
+  if(mfr) mfr=mfr.replace(/\s*(EConv|LDT2IES|DIALux|Relux|Calculux)\s*\S*/gi,'').trim()||mfr;
+  return{meta,vertAngles:vA,horizAngles:hA,candela:cd,photometricType:pType,
+         watts:null,colorTemp:ct,manufacturer:mfr,
+         lumcat:meta['LUMCAT']||null,lamp:meta['LAMP']||meta['LAMPCAT']||null,
+         luminaire:meta['LUMINAIRE']||null,cri:null,lumFlux:null};
+}
+
+// ── LDT parser ──────────────────────────────────────────────
+function parseLDT(text){
+  const lines=text.split(/\r?\n/);
+  const gl=n=>(lines[n]||'').trim();
+  const gn=n=>{const v=parseFloat(gl(n));return isNaN(v)?null:v;};
+  const Ityp=Math.round(gn(1)||0),Isym=Math.round(gn(2)||0);
+  const Mc=Math.round(gn(3)||0),Ng=Math.round(gn(5)||0);
+  let manufacturer=gl(0).replace(/\s*(EConv|LDT2IES|DIALux|Relux|Calculux)\s*\S*/gi,'').trim()||gl(0);
+  const luminaireName=gl(8),luminaireNo=gl(9),lampName=gl(10);
+  const line11=gl(11);
+  const isDate=/^\d{1,2}[.\-\/]\d{1,2}[.\-\/]\d{2,4}$/.test(line11);
+  let lumFlux=gn(12); if(lumFlux!==null&&lumFlux<=0) lumFlux=null;
+  let colorTemp=gn(13); if(colorTemp===null||colorTemp<1000||colorTemp>20000) colorTemp=null;
+  let cri=gn(14); if(cri===null||cri<0||cri>100) cri=null;
+  let headerWatts=gn(15); if(headerWatts!==null&&headerWatts<=0) headerWatts=null;
+  const nSets=Math.max(1,Math.round(gn(26)||1));
+  let lumensPerLamp=null,setWatts=null,setCCT=null,setCRI=null;
+  for(let s=0;s<nSets;s++){
+    const base=27+s*5;
+    const lpl=gn(base+1); if(s===0&&lpl!==null&&lpl>0) lumensPerLamp=lpl;
+    const sct=gn(base+2); if(s===0&&sct!==null&&sct>=1000&&sct<=20000) setCCT=sct;
+    const scr=gn(base+3); if(s===0&&scr!==null&&scr>=0&&scr<=100) setCRI=scr;
+    const sw=gn(base+4);  if(s===0&&sw!==null&&sw>0) setWatts=sw;
+  }
+  const watts=setWatts||headerWatts;
+  if(colorTemp===null) colorTemp=setCCT;
+  if(cri===null) cri=setCRI;
+  const dataStart=27+nSets*5+10;
+  if(Mc<=0) throw new Error('LDT: invalid C-plane count: '+Mc);
+  if(Ng<=0) throw new Error('LDT: invalid gamma count: '+Ng);
+  const nums=[];
+  for(let k=dataStart;k<lines.length;k++)
+    (lines[k]||'').trim().split(/[\s,]+/).forEach(p=>{const v=parseFloat(p);if(!isNaN(v))nums.push(v);});
+  let ni=0;
+  const cAngles=[]; for(let c=0;c<Mc;c++) cAngles.push(nums[ni++]);
+  const gAngles=[]; for(let g=0;g<Ng;g++) gAngles.push(nums[ni++]);
+  let storedPlanes;
+  switch(Isym){
+    case 0: storedPlanes=Mc; break; case 1: storedPlanes=1; break;
+    case 2: case 3: storedPlanes=Math.floor(Mc/2)+1; break;
+    case 4: storedPlanes=Math.floor(Mc/4)+1; break;
+    default: storedPlanes=Mc;
+  }
+  const scale=(lumensPerLamp&&lumensPerLamp>0)?lumensPerLamp/1000.0:1.0;
+  const storedCd=[];
+  for(let c=0;c<storedPlanes;c++){
+    const row=[];
+    for(let g=0;g<Ng;g++){const v=nums[ni++];row.push((isNaN(v)?0:v)*scale);}
+    storedCd.push(row);
+  }
+  const cd=[];
+  for(let c=0;c<Mc;c++){
+    let idx;
+    if(Isym===1) idx=0;
+    else if(Isym===2){idx=c<storedPlanes?c:2*(storedPlanes-1)-c;}
+    else if(Isym===3){const w=c%(Mc/2);idx=w<storedPlanes?w:2*(storedPlanes-1)-w;}
+    else if(Isym===4){const half=Mc/2,q=Math.floor(Mc/4);let w=c%half; if(w>q) w=half-w; idx=w;}
+    else idx=c;
+    cd.push(storedCd[Math.max(0,Math.min(storedPlanes-1,idx))]);
+  }
+  const maxCd=Math.max(...cd.map(r=>Math.max(...r)));
+  if(!isFinite(maxCd)||maxCd===0) throw new Error('LDT: candela data invalid. lumensPerLamp='+lumensPerLamp+' storedPlanes='+storedPlanes);
+  if(colorTemp&&colorTemp>=1800&&colorTemp<=8000){$('ctSlider').value=colorTemp;$('ctVal').textContent=Math.round(colorTemp)+' K';}
+  return{meta:{},vertAngles:gAngles,horizAngles:cAngles,candela:cd,photometricType:Ityp,
+         watts,colorTemp,manufacturer,lumcat:luminaireNo||null,
+         lamp:lampName||null,luminaire:luminaireName||null,cri,lumFlux};
+}
+
+// ── Photometric angle computations ──────────────────────────
+// All use central C-plane (index 0). Returns angle in radians for full cone (2 * half-angle).
+
+// Beam angle: 50% of peak (standard "beam angle" definition).
+// Clamped to 90° half-angle — the IES→cookie mapping only samples 0–90°,
+// so angles beyond 90° are outside the projection disc and irrelevant.
+function computeBeamFOV(data){
+  const vA=data.vertAngles, row=data.candela[0];
+  if(!vA||!row) return null;
+  let peak=0; row.forEach(v=>{if(v>peak)peak=v;});
+  if(peak===0) return null;
+  for(let i=0;i<vA.length-1;i++){
+    if(vA[i]>=90) break; // stop at 90° — beyond the projection disc
+    if(row[i]/peak>=0.5&&row[i+1]/peak<0.5){
+      const t=(0.5-row[i]/peak)/(row[i+1]/peak-row[i]/peak);
+      return 2*(vA[i]+t*(vA[i+1]-vA[i]))*Math.PI/180;
+    }
+  }
+  return null;
+}
+
+// Field angle: 10% of peak (standard "field angle" definition).
+// Clamped to 90° half-angle for the same reason as computeBeamFOV.
+function computeFieldFOV(data){
+  const vA=data.vertAngles, row=data.candela[0];
+  if(!vA||!row) return null;
+  let peak=0; row.forEach(v=>{if(v>peak)peak=v;});
+  if(peak===0) return null;
+  for(let i=0;i<vA.length-1;i++){
+    if(vA[i]>=90) break; // stop at 90° — beyond the projection disc
+    if(row[i]/peak>=0.1&&row[i+1]/peak<0.1){
+      const t=(0.1-row[i]/peak)/(row[i+1]/peak-row[i]/peak);
+      return 2*(vA[i]+t*(vA[i+1]-vA[i]))*Math.PI/180;
+    }
+  }
+  return null;
+}
+
+// Projector FOV: full angle subtended by the texture in scene space.
+// The IES→cookie mapping samples only 0–90° (nadir to horizontal), so
+// lastActiveAngle is clamped to 90°. Beyond 90° is outside the projection disc.
+// tan/atan is used to apply scaleFactor perspectively correctly.
+// tan(90°) = ∞ is handled by clamping before conversion.
+function computeProjectorFOV(data, scaleFactor) {
+  const vA = data.vertAngles, row = data.candela[0];
+  if (!vA || !row) return null;
+
+  let peak = 0;
+  row.forEach(v => { if (v > peak) peak = v; });
+  if (peak === 0) return null;
+
+  // Find last angle with non-negligible light, clamped to 90° (projection disc boundary)
+  let lastActiveAngle = vA[0];
+  for (let i = 0; i < vA.length; i++) {
+    if (vA[i] > 90) break; // IES cookie only uses 0–90°
+    if (row[i] / peak > 0.00001) lastActiveAngle = vA[i];
+  }
+
+  // Clamp to just under 90° to avoid tan(π/2) = ±∞
+  const halfAngleDeg = Math.min(lastActiveAngle, 89.9999);
+  const halfAngleRad = halfAngleDeg * Math.PI / 180;
+
+  // Apply scale factor perspectively: tan(θ)/sf then atan back
+  const scaledTangent = Math.tan(halfAngleRad) / scaleFactor;
+  return 2 * Math.atan(scaledTangent);
+}
+
+// ── Sampler ─────────────────────────────────────────────────
+function sampleData(data,theta,phi){
+  const{vertAngles:vA,horizAngles:hA,candela:cd}=data;
+  const nV=vA.length,nH=hA.length;
+  if(!nV||!nH) return 0;
+  const tc=Math.max(vA[0],Math.min(vA[nV-1],theta));
+  let vi=nV-2;
+  for(let k=0;k<nV-1;k++) if(tc>=vA[k]&&tc<=vA[k+1]){vi=k;break;}
+  const vt=vA[vi+1]!==vA[vi]?(tc-vA[vi])/(vA[vi+1]-vA[vi]):0;
+  const vi1=Math.min(vi+1,nV-1);
+  if(nH===1) return cd[0][vi]*(1-vt)+cd[0][vi1]*vt;
+  const hMin=hA[0],hMax=hA[nH-1];
+  let pn=((phi%360)+360)%360;
+  if(hMax<=90+1e-6){       pn=pn%180; if(pn>90) pn=180-pn; }
+  else if(hMax<=180+1e-6){ if(pn>180) pn=360-pn; }
+  pn=Math.max(hMin,Math.min(hMax,pn));
+  let hi=nH-2;
+  for(let k=0;k<nH-1;k++) if(pn>=hA[k]&&pn<=hA[k+1]){hi=k;break;}
+  const ht=hA[hi+1]!==hA[hi]?(pn-hA[hi])/(hA[hi+1]-hA[hi]):0;
+  const hi1=Math.min(hi+1,nH-1);
+  return(cd[hi][vi]*(1-ht)+cd[hi1][vi]*ht)*(1-vt)+(cd[hi][vi1]*(1-ht)+cd[hi1][vi1]*ht)*vt;
+}
+
+// ── Blue noise ──────────────────────────────────────────────
+const BN=64;
+const bnTile=(()=>{const d=new Float32Array(BN*BN);for(let y=0;y<BN;y++)for(let x=0;x<BN;x++)d[y*BN+x]=(52.9829189*((0.06711056*x+0.00583715*y)%1))%1;return d;})();
+function applyDither(v,px,py){const n=bnTile[(py%BN)*BN+(px%BN)];const t=n<0.5?Math.sqrt(2*n)-1:1-Math.sqrt(2-2*n);return Math.max(0,Math.min(1,v+t/255));}
+
+// ── Colour temperature ──────────────────────────────────────
+function kelvinToRGB(K){
+  K=Math.max(1000,Math.min(10000,K))/100;
+  const r=K<=66?1:Math.pow(K-60,-0.1332)*1.2929;
+  const g=K<=66?(0.39*Math.log(K)-0.6318):Math.pow(K-60,-0.0755)*1.1299;
+  const b=K>=66?1:(K<=19?0:0.5432*Math.log(K-10)-1.1964);
+  return[Math.max(0,Math.min(1,r)),Math.max(0,Math.min(1,g)),Math.max(0,Math.min(1,b))];
+}
+
+// ── Procedural noise ────────────────────────────────────────
+function hsh(x,y,s){const n=Math.sin(x*127.1+y*311.7+s*74.3)*43758.5453;return n-Math.floor(n);}
+function snz(x,y,s){const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy,ux=fx*fx*(3-2*fx),uy=fy*fy*(3-2*fy);return hsh(ix,iy,s)*(1-ux)*(1-uy)+hsh(ix+1,iy,s)*ux*(1-uy)+hsh(ix,iy+1,s)*(1-ux)*uy+hsh(ix+1,iy+1,s)*ux*uy;}
+function fbm(x,y,s,o){let v=0,a=0.5,f=1,m=0;for(let i=0;i<o;i++){v+=snz(x*f,y*f,s+i)*a;m+=a;f*=2.1;a*=0.5;}return v/m;}
+
+// ── Auto-scale ───────────────────────────────────────────────
+function computeAutoScale(data, gamma, threshold=0.01){
+  const P=128, gExp=1/gamma;
+  let gMax=0;
+  for(let py=0;py<P;py++)for(let px=0;px<P;px++){
+    const u=(px+.5)/P*2-1, v=(py+.5)/P*2-1, r=Math.sqrt(u*u+v*v);
+    if(r>=1) continue;
+    const s=sampleData(data, r*90, (Math.atan2(v,u)*180/Math.PI+360)%360);
+    if(s>gMax) gMax=s;
+  }
+  if(gMax===0) return 1;
+
+  // We find the 'maxR' relative to the light's actual edge, not the 90-degree limit
+  let maxR = 0;
+  for(let py=0;py<P;py++)for(let px=0;px<P;px++){
+    const u=(px+.5)/P*2-1, v=(py+.5)/P*2-1, r=Math.sqrt(u*u+v*v);
+    if(r>=1) continue;
+    const s=sampleData(data, r*90, (Math.atan2(v,u)*180/Math.PI+360)%360);
+    if(Math.pow(s/gMax, gExp) > threshold && r > maxR) maxR = r;
+  }
+
+  // This SF represents how much of the 90-degree sampling space we are using.
+  return maxR > 0 ? (1.0 / maxR) : 1.0;
+}
+
+// ── Render ───────────────────────────────────────────────────
+function render(){
+  const res=parseInt($('resSelect').value);
+  const type=$('typeSelect').value;
+  const gamma=parseFloat($('gammaSlider').value);
+  const norm=$('normCheck').checked;
+  const doDither=$('ditherCheck').checked;
+  const doScale=$('autoScaleCheck').checked&&type!=='equirect';
+  const doSoftEdge=$('softEdgeCheck').checked&&type!=='equirect';
+  const softWidth=parseFloat($('softEdgeSlider').value);
+  const data=parsedData;
+  const gExp=1/gamma;
+
+  let gMax=0;
+  data.candela.forEach(row=>row.forEach(v=>{if(v>gMax)gMax=v;}));
+  if(gMax===0) gMax=1;
+
+  const sf=doScale?computeAutoScale(data,gamma):1.0;
+  lastScaleFactor=sf; // persist for meta panel
+
+  function sampleCookie(u,v){
+    const su=u/sf,sv=v/sf,r=Math.sqrt(su*su+sv*sv);
+    if(r>=1.0) return 0;
+    return sampleData(data,r*90,(Math.atan2(sv,su)*180/Math.PI+360)%360);
+  }
+
+  // softMask in r_OUTPUT space (no sf division) — fades the texture disc boundary.
+  // Applied POST-GAMMA: multiply the already-gamma-encoded value by the mask.
+  // This suppresses the gamma-amplified dim tail near r=1 far more effectively
+  // than pre-gamma masking, because post-gamma values are already in perceptual
+  // space where the mask's linear taper matches visual smoothness.
+  function softMask(u,v){
+    if(!doSoftEdge) return 1.0;
+    const r=Math.sqrt(u*u+v*v); // r_OUTPUT — no sf division
+    const inner=1.0-softWidth;
+    if(r<=inner) return 1.0;
+    if(r>=1.0)   return 0.0;
+    const t=(r-inner)/softWidth;
+    return 1.0-t*t*(3.0-2.0*t); // smoothstep
+  }
+
+  const canvas=$('previewCanvas');
+  canvas.width=res; canvas.height=res;
+  const img=canvas.getContext('2d').createImageData(res,res);
+
+  if(type==='colour'){
+    const caS=parseFloat($('caSlider').value),caBias=parseFloat($('caBiasSlider').value);
+    const vigS=parseFloat($('vigSlider').value),vigSoft=parseFloat($('vigSoftSlider').value);
+    const dirtA=parseFloat($('dirtSlider').value),dirtSeed=parseFloat($('dirtSeedSlider').value);
+    const fringeA=parseFloat($('fringeSlider').value);
+    const fresnelA=parseFloat($('fresnelSlider').value),fresnelF=parseFloat($('fresnelFreqSlider').value);
+    const hazeA=parseFloat($('hazeSlider').value);
+    const ctRGB=kelvinToRGB(parseFloat($('ctSlider').value));
+    for(let py=0;py<res;py++) for(let px=0;px<res;px++){
+      const u=(px+.5)/res*2-1,v=(py+.5)/res*2-1;
+      const r=Math.sqrt(u*u+v*v);
+      const dx=r>0?u/r:0,dy=r>0?v/r:0;
+      const caOff=Math.pow(Math.min(r,1),1+caBias*2)*caS*0.04;
+      const rI=sampleCookie(u+dx*caOff,v+dy*caOff)/gMax;
+      const gI=sampleCookie(u,v)/gMax;
+      const bI=sampleCookie(u-dx*caOff,v-dy*caOff)/gMax;
+      const vigR=Math.pow(Math.max(0,1-r),vigSoft);
+      const vig=1-vigS*(1-vigR);
+      const dirtM=1-dirtA*(1-fbm(px/res*4,py/res*4,dirtSeed,5)**2);
+      const fresnelMod=fresnelA>0?1-fresnelA*(Math.sin(r*fresnelF*Math.PI)*.5+.5)*.4:1;
+      const hazeAdd=hazeA>0?hazeA*0.15*Math.exp(-r*2):0;
+      let fR=0,fG=0,fB=0;
+      if(fringeA>0&&r<1){const f=fringeA*Math.exp(-(1-r)*8)*gI;fR=f*.9;fG=f*.2;fB=f;}
+      // Apply gamma first, then post-gamma softMask
+      const sm=softMask(u,v);
+      const cr=Math.pow(Math.max(0,Math.min(1,((rI+fR)*fresnelMod*vig*dirtM+hazeAdd)*ctRGB[0])),gExp)*sm;
+      const cg=Math.pow(Math.max(0,Math.min(1,((gI+fG)*fresnelMod*vig*dirtM+hazeAdd)*ctRGB[1])),gExp)*sm;
+      const cb=Math.pow(Math.max(0,Math.min(1,((bI+fB)*fresnelMod*vig*dirtM+hazeAdd)*ctRGB[2])),gExp)*sm;
+      let fr=cr,fg=cg,fb=cb;
+      if(doDither){fr=applyDither(fr,px,py);fg=applyDither(fg,px,py);fb=applyDither(fb,px,py);}
+      const i4=(py*res+px)*4;
+      img.data[i4]=Math.round(fr*255);img.data[i4+1]=Math.round(fg*255);
+      img.data[i4+2]=Math.round(fb*255);img.data[i4+3]=255;
+    }
+  } else {
+    for(let py=0;py<res;py++) for(let px=0;px<res;px++){
+      const u=(px+.5)/res*2-1,v=(py+.5)/res*2-1;
+      let raw;
+      if(type==='equirect'){
+        raw=sampleData(data,((v/sf+1)/2)*180,((u/sf+1)/2)*360);
+      } else {
+        raw=sampleCookie(u,v);
+      }
+      let val=norm?raw/gMax:raw/gMax;
+      // Apply gamma first, then softMask post-gamma
+      val=Math.pow(Math.max(0,Math.min(1,val)),gExp)*softMask(u,v);
+      if(doDither) val=applyDither(val,px,py);
+      const b=Math.round(val*255);
+      const i4=(py*res+px)*4;
+      img.data[i4]=b;img.data[i4+1]=b;img.data[i4+2]=b;img.data[i4+3]=255;
+    }
+  }
+
+  const ctx=canvas.getContext('2d');
+  ctx.putImageData(img,0,0);
+  const dc=$('previewDark'); dc.width=res; dc.height=res;
+  dc.getContext('2d').putImageData(img,0,0);
+  $('previewSection').style.display='block';
+  $('downloadBtn').disabled=false;
+  // showMeta sets lastProjFOV and rebuilds outputFilename
+  showMeta(parsedData);
+}
+
+// ── Engine parameter suggestions ────────────────────────────
+// Actual SL attenuation from deferredUtil.glsl calcLegacyDistanceAttenuation():
+//
+//   dist_atten = 1.0 - clamp((d_norm + falloff) / (1.0 + falloff), 0, 1)
+//   dist_atten = dist_atten * dist_atten * 2.0
+//
+// This simplifies to: sl_atten(s, f) = (1−s)² × 2 / (1+f)²
+// Falloff is a pure brightness scalar 1/(1+f)² — it does not change curve shape.
+// f and intensity are interchangeable; we prefer to adjust f to keep intensity=1.0.
+//
+// Condition: compare physReach vs RADIUS (not vs distWall).
+//   physReach >= radius: lamp fills the entire light volume — f=0, intensity=1.0.
+//   physReach <  radius: physical reach is inside the volume. Two sub-cases:
+//     distWall <= physReach < radius: wall is within reach, clip region is beyond —
+//       f=0 (lamp reaches wall fine, just the clip region is dark)
+//     physReach < distWall: wall is beyond physical reach —
+//       f = distWall/physReach − 1  (scales brightness to match real-world deficit)
+//       If f_ideal > 2.0 (SL max): use f=2, then scale intensity by (1+2)²/(1+f_ideal)²
+//       so that sl_atten(s,2)*intensity exactly matches sl_atten(s,f_ideal)*1.0.
+function deriveEngineParams() {
+  const SL_MAX_RADIUS  = 20.0;
+  const SL_MAX_FALLOFF = 2.0;
+  const distWall  = Math.max(0.01,  parseFloat($('distWallInput')?.value)  || 5.0);
+  const clipDepth = Math.max(0.001, parseFloat($('clipDepthInput')?.value) || 0.5);
+  const maxCd = parsedData ? Math.max(...parsedData.candela.map(r => Math.max(...r))) : 0;
+  const physReach = maxCd > 0 ? Math.sqrt(maxCd) : 0;
+
+  const engineRadius = Math.min(distWall + clipDepth, SL_MAX_RADIUS);
+
+  let falloffIdeal, falloff, intensity;
+
+  if (physReach <= 0 || physReach >= engineRadius) {
+    // Strong lamp: fills the entire light volume or has no data
+    falloffIdeal = 0.0;
+    falloff      = 0.0;
+    intensity    = 1.0;
+  } else if (physReach >= distWall) {
+    // physReach is between distWall and radius: wall is within reach, only clip region is dark
+    falloffIdeal = 0.0;
+    falloff      = 0.0;
+    intensity    = 1.0;
+  } else {
+    // Weak lamp: wall is beyond physical reach — scale brightness
+    falloffIdeal = distWall / physReach - 1.0;
+    if (falloffIdeal <= SL_MAX_FALLOFF) {
+      falloff   = falloffIdeal;
+      intensity = 1.0;
+    } else {
+      // f capped at 2.0; scale intensity to cover the remaining deficit
+      // intensity = (1 + SL_MAX_FALLOFF)² / (1 + falloffIdeal)²
+      falloff   = SL_MAX_FALLOFF;
+      intensity = Math.pow((1.0 + SL_MAX_FALLOFF) / (1.0 + falloffIdeal), 2);
+    }
+  }
+
+  const s         = distWall / engineRadius;
+  const inner     = (s + falloff) / (1.0 + falloff);
+  const wallAtten = s < 1.0 ? Math.pow(Math.max(0, 1.0 - inner), 2) * 2.0 : 0.0;
+  const wallBrightness = wallAtten * intensity;
+
+  // Max wall distance where falloff alone suffices (f_ideal = 2 at physReach = distWall/3)
+  const maxRangeFalloffOnly = physReach > 0 ? physReach * (1.0 + SL_MAX_FALLOFF) : null;
+
+  return {
+    radius:               engineRadius,
+    falloff:              falloff,
+    falloffIdeal:         falloffIdeal,
+    intensity:            intensity,
+    distWall:             distWall,
+    clipDepth:            clipDepth,
+    physReach:            physReach > 0 ? physReach : null,
+    wallAtten:            wallAtten,
+    wallBrightness:       wallBrightness,
+    isWeak:               physReach > 0 && physReach < distWall,
+    isFalloffClamped:     physReach > 0 && falloffIdeal > SL_MAX_FALLOFF,
+    isIntensityReduced:   intensity < 1.0,
+    maxRangeFalloffOnly:  maxRangeFalloffOnly,
+    isRadiusClamped:      engineRadius >= SL_MAX_RADIUS,
+  };
+}
+// ── Meta panel ───────────────────────────────────────────────
+function fmt4(v){return v!==null?v.toFixed(4)+' rad':'—';}
+function fmtDeg(v){return v!==null?(v*180/Math.PI).toFixed(1)+'°':'—';}
+
+function showMeta(d) {
+  const nV = d.vertAngles.length, nH = d.horizAngles.length;
+  const type = $('typeSelect').value;
+  const doScale = $('autoScaleCheck').checked && type !== 'equirect';
+  const sf = doScale ? lastScaleFactor : 1.0;
+
+  const beamFOV  = computeBeamFOV(d);
+  const fieldFOV = computeFieldFOV(d);
+  const projFOV  = computeProjectorFOV(d, sf);
+  lastProjFOV = projFOV;
+  outputFilename = buildFilename(d);
+
+  const maxCd = Math.max(...d.candela.map(r => Math.max(...r)));
+  const ep = deriveEngineParams();
+  const projLabel = 'Projector FOV' + (doScale ? ' (scaled)' : '');
+  const sfDisplay = doScale ? sf.toFixed(4) + '×' : '1.0000× (off)';
+  const criDisplay = d.cri !== null ? 'CRI ' + Math.round(d.cri) : 'CRI —';
+
+  // ── Photometric data cards ──
+  let h = `
+    <div class="mc"><div class="mv">${isFinite(maxCd)?Math.round(maxCd).toLocaleString():'—'}</div><div class="ml">Peak candela</div></div>
+    <div class="mc"><div class="mv">${nV} / ${nH}</div><div class="ml">V / H angles</div></div>
+    <div class="mc"><div class="mv">${d.vertAngles[0]?.toFixed(0)}–${d.vertAngles[nV-1]?.toFixed(0)}°</div><div class="ml">Vertical range</div></div>
+    <div class="mc"><div class="mv">${fmt4(beamFOV)}</div><div class="ml">Beam FOV 50% — rads</div></div>
+    <div class="mc"><div class="mv">${fmtDeg(beamFOV)}</div><div class="ml">Beam FOV 50% — deg</div></div>
+    <div class="mc"><div class="mv">${fmt4(fieldFOV)}</div><div class="ml">Field angle 10% — rads</div></div>
+    <div class="mc"><div class="mv">${fmtDeg(fieldFOV)}</div><div class="ml">Field angle 10% — deg</div></div>
+    <div class="mc mc-highlight"><div class="mv mv-highlight">${fmt4(projFOV)}</div><div class="ml">${projLabel} — rads</div></div>
+    <div class="mc mc-highlight"><div class="mv mv-highlight">${fmtDeg(projFOV)}</div><div class="ml">${projLabel} — deg</div></div>
+    <div class="mc"><div class="mv">${sfDisplay}</div><div class="ml">Auto-scale factor</div></div>`;
+
+  if(d.watts)     h+=`<div class="mc"><div class="mv">${d.watts} W</div><div class="ml">Watts</div></div>`;
+  if(d.colorTemp) h+=`<div class="mc"><div class="mv">${Math.round(d.colorTemp)} K</div><div class="ml">Colour temp</div></div>`;
+  h+=`<div class="mc"><div class="mv">${criDisplay}</div><div class="ml">Colour rendering</div></div>`;
+  if(d.lumFlux)   h+=`<div class="mc"><div class="mv">${Math.round(d.lumFlux).toLocaleString()} lm</div><div class="ml">Lumen flux</div></div>`;
+  if(d.luminaire) h+=`<div class="mc mw"><div class="mv" style="font-size:14px">${d.luminaire}</div><div class="ml">Luminaire</div></div>`;
+  if(d.lamp)      h+=`<div class="mc mw"><div class="mv" style="font-size:14px">${d.lamp}</div><div class="ml">Lamp</div></div>`;
+  if(d.manufacturer) h+=`<div class="mc mw"><div class="mv" style="font-size:14px">${d.manufacturer}</div><div class="ml">Manufacturer</div></div>`;
+
+  $('metaGrid').innerHTML = h;
+  $('metaSection').style.display = 'block';
+
+  // ── Engine params card ──
+  let eng = `<div class="section-title">Engine parameters</div>
+    <div class="engine-card">
+      <div class="engine-card-title">Second Life spotlight — wall: ${ep.distWall.toFixed(2)} m, clip: ${(ep.clipDepth*100).toFixed(1)} cm</div>
+      <div class="engine-params">
+        <div class="ep"><div class="ev">${ep.radius.toFixed(4)}</div><div class="el">Radius</div></div>
+        <div class="ep"><div class="ev">${ep.falloff.toFixed(4)}</div><div class="el">Falloff</div></div>
+        <div class="ep"><div class="ev">${ep.intensity.toFixed(4)}</div><div class="el">Intensity</div></div>
+      </div>
+      <div style="font-size:12px;color:var(--color-text-tertiary)">
+        SL brightness at wall: <strong style="color:var(--color-text-primary)">${(ep.wallBrightness*100).toFixed(3)}%</strong>
+        ${ep.physReach !== null ? `&nbsp;·&nbsp; Physical reach (1 lux): <strong style="color:var(--color-text-primary)">${ep.physReach.toFixed(2)} m</strong>` : ''}
+      </div>`;
+  if(ep.isWeak && !ep.isFalloffClamped){
+    eng+=`<div class="engine-note" style="margin-top:8px;background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)">
+      ℹ Weak lamp — physical reach (${ep.physReach.toFixed(2)} m) is less than wall distance (${ep.distWall.toFixed(2)} m).
+      Falloff set to ${ep.falloff.toFixed(4)} to match real-world brightness at this distance. Intensity remains 1.0.
+    </div>`;
+  }
+  if(ep.isFalloffClamped){
+    eng+=`<div class="engine-note" style="margin-top:8px">
+      ⚠ Lamp is too weak for falloff alone to compensate (ideal falloff ${ep.falloffIdeal.toFixed(2)} exceeds SL max of 2.0).
+      Falloff capped at 2.0; intensity reduced to ${ep.intensity.toFixed(4)} to maintain correct wall brightness.
+      Max wall distance where falloff alone suffices: ${ep.maxRangeFalloffOnly !== null ? ep.maxRangeFalloffOnly.toFixed(2)+' m' : '—'}.
+    </div>`;
+  }
+  if(ep.isRadiusClamped){
+    eng+=`<div class="engine-note" style="margin-top:8px">
+      ⚠ Radius clamped to Second Life's 20 m limit. Move the projector closer or reduce clip depth.
+    </div>`;
+  }
+  eng+=`</div>`;
+  $('engineSection').innerHTML = eng;
+}
+
+$('downloadBtn').onclick=()=>{
+  const a=document.createElement('a');
+  a.download=outputFilename;
+  a.href=$('previewCanvas').toDataURL('image/png');
+  a.click();
+};
+</script>
