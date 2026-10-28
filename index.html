@@ -387,7 +387,7 @@ function buildFilename(d){
   const m=sanitise(d.manufacturer),l=sanitise(d.nameHint||d.lamp||d.luminaire||d.lumcat);
   const suf=$('typeSelect').value==='colour'?'_colour':'';
   // Append projector FOV in radians if available, rounded to 4 decimal places
-  const fovSuf=lastProjFOV!==null?'_FOV-'+lastProjFOV.toFixed(4).replace('.','p'):'';
+  const fovSuf=lastProjFOV!==null?'_FOV-'+lastProjFOV.toFixed(3).replace('.','p'):'';
   let base;
   if(m&&l) base=m+'-'+l; else if(m) base=m; else if(l) base=l; else base='ies_texture';
   return base+suf+fovSuf+'_cookie.png';
@@ -592,33 +592,24 @@ function computeFieldFOV(data){
   return null;
 }
 
-// Projector FOV: full angle subtended by the texture in scene space.
-// The IES→cookie mapping samples only 0–90° (nadir to horizontal), so
-// lastActiveAngle is clamped to 90°. Beyond 90° is outside the projection disc.
-// tan/atan is used to apply scaleFactor perspectively correctly.
-// tan(90°) = ∞ is handled by clamping before conversion.
-function computeProjectorFOV(data, scaleFactor) {
-  const vA = data.vertAngles, row = data.candela[0];
-  if (!vA || !row) return null;
-
-  let peak = 0;
-  row.forEach(v => { if (v > peak) peak = v; });
-  if (peak === 0) return null;
-
-  // Find last angle with non-negligible light, clamped to 90° (projection disc boundary)
-  let lastActiveAngle = vA[0];
-  for (let i = 0; i < vA.length; i++) {
-    if (vA[i] > 90) break; // IES cookie only uses 0–90°
-    if (row[i] / peak > 0.00001) lastActiveAngle = vA[i];
-  }
-
-  // Clamp to just under 90° to avoid tan(π/2) = ±∞
-  const halfAngleDeg = Math.min(lastActiveAngle, 89.9999);
-  const halfAngleRad = halfAngleDeg * Math.PI / 180;
-
-  // Apply scale factor perspectively: tan(θ)/sf then atan back
-  const scaledTangent = Math.tan(halfAngleRad) / scaleFactor;
-  return 2 * Math.atan(scaledTangent);
+// ── Projector geometry (Second Life) ─────────────────────────
+// The viewer projects the texture through a perspective frustum (pipeline.cpp
+// setupSpotLight: glm::perspective(fov, aspect, ...), then a perspective divide
+// in the deferred shader), so texture radius is proportional to tan(angle),
+// not to the angle itself. For a texture coordinate (u,v) in [-1,1] with
+// r = sqrt(u²+v²), and a projector FOV F:
+//     angle from the projector axis = atan(r * tan(F/2))
+// F is the value typed into the build tool's FOV box, which accepts 0-3 rad
+// with 3 decimals (floater_tools.xml "Light FOV"), so it is capped and rounded
+// to that here. The viewer uses the prim's X/Y scale as the aspect ratio, so
+// the texture is only undistorted on a prim with equal X and Y scale.
+const SL_MAX_FOV=3.0; // radians
+function projectorGeometry(sf, autoScaled){
+  // sf is the auto-scale factor: the texture edge covers 90°/sf of the photometric data.
+  const wantedFov=Math.PI/sf;
+  let fov=Math.min(wantedFov,SL_MAX_FOV);
+  fov=Math.max(Math.round(fov*1000)/1000,0.001);
+  return {fov, half:fov/2, clamped:autoScaled&&wantedFov>SL_MAX_FOV};
 }
 
 // ── Sampler ─────────────────────────────────────────────────
@@ -707,10 +698,13 @@ function render(){
   const sf=doScale?computeAutoScale(data,gamma):1.0;
   lastScaleFactor=sf; // persist for meta panel
 
+  // Same projection Second Life uses (see projectorGeometry): radius is proportional to tan(angle).
+  const geo=projectorGeometry(sf,doScale);
+  const tanHalf=Math.tan(geo.half);
   function sampleCookie(u,v){
-    const su=u/sf,sv=v/sf,r=Math.sqrt(su*su+sv*sv);
-    if(r>=1.0) return 0;
-    return sampleData(data,r*90,(Math.atan2(sv,su)*180/Math.PI+360)%360);
+    const r=Math.sqrt(u*u+v*v);
+    const theta=Math.atan(r*tanHalf)*180/Math.PI; // always below 90°
+    return sampleData(data,theta,(Math.atan2(v,u)*180/Math.PI+360)%360);
   }
 
   // softMask in r_OUTPUT space (no sf division) - fades the texture disc boundary.
@@ -878,6 +872,7 @@ function deriveEngineParams() {
 // ── Meta panel ───────────────────────────────────────────────
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function fmt4(v){return v!==null?v.toFixed(4)+' rad':'-';}
+function fmt3(v){return v!==null?v.toFixed(3)+' rad':'-';}
 function fmtDeg(v){return v!==null?(v*180/Math.PI).toFixed(1)+'°':'-';}
 
 function showMeta(d) {
@@ -888,7 +883,8 @@ function showMeta(d) {
 
   const beamFOV  = computeBeamFOV(d);
   const fieldFOV = computeFieldFOV(d);
-  const projFOV  = computeProjectorFOV(d, sf);
+  const geo = type === 'equirect' ? null : projectorGeometry(sf, doScale);
+  const projFOV = geo ? geo.fov : null;
   lastProjFOV = projFOV;
   outputFilename = buildFilename(d);
 
@@ -907,7 +903,7 @@ function showMeta(d) {
     <div class="mc"><div class="mv">${fmtDeg(beamFOV)}</div><div class="ml">Beam FOV 50% - deg</div></div>
     <div class="mc"><div class="mv">${fmt4(fieldFOV)}</div><div class="ml">Field angle 10% - rads</div></div>
     <div class="mc"><div class="mv">${fmtDeg(fieldFOV)}</div><div class="ml">Field angle 10% - deg</div></div>
-    <div class="mc mc-highlight"><div class="mv mv-highlight">${fmt4(projFOV)}</div><div class="ml">${projLabel} - rads</div></div>
+    <div class="mc mc-highlight"><div class="mv mv-highlight">${fmt3(projFOV)}</div><div class="ml">${projLabel} - rads</div></div>
     <div class="mc mc-highlight"><div class="mv mv-highlight">${fmtDeg(projFOV)}</div><div class="ml">${projLabel} - deg</div></div>
     <div class="mc"><div class="mv">${sfDisplay}</div><div class="ml">Auto-scale factor</div></div>`;
 
@@ -951,6 +947,12 @@ function showMeta(d) {
   if(ep.isRadiusClamped){
     eng+=`<div class="engine-note" style="margin-top:8px">
       ⚠ Radius clamped to Second Life's 20 m limit. Move the projector closer or reduce clip depth.
+    </div>`;
+  }
+  if(geo && geo.clamped){
+    eng+=`<div class="engine-note" style="margin-top:8px">
+      ⚠ This lamp emits light beyond ±${(SL_MAX_FOV/2*180/Math.PI).toFixed(1)}°, but Second Life's maximum projector FOV is ${SL_MAX_FOV.toFixed(1)} rad.
+      Light outside that cone is cropped.
     </div>`;
   }
   eng+=`</div>`;

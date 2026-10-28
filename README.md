@@ -53,9 +53,13 @@ cd projector-cookie-generator
 # then open index.html in your browser
 ```
 
-### Setting up the projector in your engine
+### Setting up the projector in Second Life
 
-The tool reports a **Projector FOV** in radians and degrees, which is also appended to the filename. Enter this value as the projector's field of view in your engine so the cookie's scale matches the lamp's real distribution. When **Auto-scale beam to fill texture** is on, the reported FOV is adjusted to match.
+Enter the **Projector FOV** reported by the tool (in radians) in the **FOV** box on the Features tab of the build tools. Second Life accepts 0 to 3 radians with three decimals, so the reported value is already rounded to three decimals and capped at 3.0 (about 172°). It is also appended to the filename.
+
+- Use a prim with **equal X and Y scale**. The viewer uses the X/Y ratio as the projector's aspect ratio, so a non-square prim stretches the texture.
+- Second Life reads the texture as **sRGB** and converts it to linear light in its shader. To make the projected light proportional to the photometric data, set **Gamma** to about 2.2. The default of 1.0 gives a darker, higher-contrast result.
+- When **Auto-scale beam to fill texture** is on, the FOV is chosen so the beam fills the texture. When it is off, the widest FOV Second Life allows (3.0 rad) is used.
 
 ### Second Life parameters
 
@@ -68,7 +72,9 @@ The tool calculates radius, falloff, and intensity so wall brightness approximat
 
 ## How it works
 
-The photometric data is sampled over the 0–90° range from the lamp's axis and mapped radially onto a square texture, so the centre of the image is the beam axis and the edge is 90° off-axis. Intensities are normalised to the peak candela value and gamma-encoded before export.
+The photometric data is mapped onto the square texture the way Second Life projects it. The viewer uses a perspective frustum, so a texel's distance from the centre is proportional to the tangent of its angle from the lamp's axis, not to the angle itself. The midpoints of the texture's edges sit at half the projector FOV from the axis, and the corners show the lamp's light at wider angles. Intensities are normalised to the peak candela value and gamma-encoded before export.
+
+A single perspective projector cannot cover a whole hemisphere. For very wide lamps the outermost few degrees are cropped by Second Life's 3.0 rad FOV limit, and the centre of the beam gets relatively few pixels, so a larger output resolution helps.
 
 ## Supported formats
 
