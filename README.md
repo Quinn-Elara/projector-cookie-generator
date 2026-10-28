@@ -24,7 +24,7 @@ You can find some example photometric files using the links below.
 - **Output resolution**: 128 to 2048 px square.
 - **Live preview** on light and dark backgrounds.
 - **Base controls**
-  - Gamma
+  - Gamma (default 2.2, matching the sRGB encoding Second Life expects)
   - Auto-scale beam to fill the texture
   - Soft edge falloff with adjustable width
   - Gradient noise dithering to reduce banding
@@ -58,7 +58,7 @@ cd projector-cookie-generator
 Enter the **Projector FOV** reported by the tool (in radians) in the **FOV** box on the Features tab of the build tools. Second Life accepts 0 to 3 radians with three decimals, so the reported value is already rounded to three decimals and capped at 3.0 (about 172°). It is also appended to the filename.
 
 - Use a prim with **equal X and Y scale**. The viewer uses the X/Y ratio as the projector's aspect ratio, so a non-square prim stretches the texture.
-- Second Life reads the texture as **sRGB** and converts it to linear light in its shader. To make the projected light proportional to the photometric data, set **Gamma** to about 2.2. The default of 1.0 gives a darker, higher-contrast result.
+- Second Life reads the texture as **sRGB** and converts it to linear light in its shader. The default **Gamma** of 2.2 approximates sRGB encoding, so the projected light is proportional to the photometric data. A gamma of 1.0 would give a darker, higher-contrast result.
 - When **Auto-scale beam to fill texture** is on, the FOV is chosen so the beam fills the texture. When it is off, the widest FOV Second Life allows (3.0 rad) is used.
 
 ### Second Life parameters
