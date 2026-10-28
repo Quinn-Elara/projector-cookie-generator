@@ -8,6 +8,12 @@ Drop in an **IES** or **LDT** file and get a PNG texture that reproduces the lam
 
 Everything runs locally in your browser. No files are uploaded anywhere.
 
+## Demo files
+
+You can find some example photometric files using the links below.
+
+ - **[Pixar RenderMan Library](https://renderman.pixar.com/ies-profiles)** by Dylan Sisson and Leif Pedersen.
+
 ## Features
 
 - **IES and LDT support**: parses `.ies` and `.ldt` (EULUMDAT) files, including LDT symmetry modes.
