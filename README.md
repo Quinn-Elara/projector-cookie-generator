@@ -60,6 +60,7 @@ Enter the **Projector FOV** reported by the tool (in radians) in the **FOV** box
 - Use a prim with **equal X and Y scale**. The viewer uses the X/Y ratio as the projector's aspect ratio, so a non-square prim stretches the texture.
 - Second Life reads the texture as **sRGB** and converts it to linear light in its shader. The default **Gamma** of 2.2 approximates sRGB encoding, so the projected light is proportional to the photometric data. A gamma of 1.0 would give a darker, higher-contrast result.
 - When **Auto-scale beam to fill texture** is on (the default), the FOV is chosen so the lamp's pattern fills the texture. When it is off, the widest FOV Second Life allows (3.0 rad) is used, which gives a small bright area for wide lamps.
+- **Check the shape for each lamp.** A lamp's pattern can look different at different intensity levels, so the **Beam edge** setting changes the beam's shape. Louvered, gridded or shuttered fixtures often look squarer at higher values than at lower values. The tool does not choose this for you, so check the preview and adjust it for each lamp.
 
 ### Second Life parameters
 

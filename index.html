@@ -203,6 +203,11 @@
     <input type="range" id="edgeThrSlider" min="1" max="90" step="1" value="50"/>
     <span class="sv" id="edgeThrVal">50%</span>
   </div>
+  <div class="engine-note" id="edgeThrNote" style="margin:4px 0 8px">
+    The beam's shape depends on this setting. A lamp's pattern can look different at different intensity levels
+    (louvered, gridded or shuttered fixtures often look squarer at higher values than at lower values), so check the preview and
+    adjust it for each lamp.
+  </div>
   <div class="tr"><label>Soft edge falloff <span class="badge">smooth</span></label><input type="checkbox" id="softEdgeCheck" checked/></div>
   <div class="sr" id="softEdgeRow">
     <label>Falloff width</label>
@@ -369,7 +374,9 @@ document.querySelectorAll('.preset-btn').forEach(btn=>{
 ['ditherCheck','autoScaleCheck','softEdgeCheck'].forEach(id=>{
   $(id).onchange=()=>{
     $('softEdgeRow').style.display=$('softEdgeCheck').checked?'flex':'none';
-    $('edgeThrRow').style.display=($('autoScaleCheck').checked||$('softEdgeCheck').checked)?'flex':'none';
+    const edgeVisible=$('autoScaleCheck').checked||$('softEdgeCheck').checked;
+    $('edgeThrRow').style.display=edgeVisible?'flex':'none';
+    $('edgeThrNote').style.display=edgeVisible?'block':'none';
     if(parsedData)render();
   };
 });
