@@ -25,8 +25,8 @@ You can find some example photometric files using the links below.
 - **Live preview** on light and dark backgrounds.
 - **Base controls**
   - Gamma (default 2.2, matching the sRGB encoding Second Life expects)
-  - Auto-scale beam to fill the texture
-  - Soft edge falloff with adjustable width
+  - Auto-scale beam to fill the texture, with an adjustable beam edge (% of peak intensity)
+  - Soft edge falloff with adjustable width (on by default)
   - Gradient noise dithering to reduce banding
 - **Lens effects** (full colour mode): colour temperature (1800–8000 K), chromatic aberration, vignette, lens dirt/dust, edge fringe glow, Fresnel rings, and haze. Presets: None, Fresnel, Flat / PC, PAR / reflector, Vintage / hazy.
 - **Lamp data readout**: peak candela, angle counts, beam angle (50% of peak), field angle (10% of peak), projector FOV (radians and degrees), watts, colour temperature, CRI, lumen flux, and luminaire/lamp/manufacturer info where the file provides it.
@@ -59,7 +59,7 @@ Enter the **Projector FOV** reported by the tool (in radians) in the **FOV** box
 
 - Use a prim with **equal X and Y scale**. The viewer uses the X/Y ratio as the projector's aspect ratio, so a non-square prim stretches the texture.
 - Second Life reads the texture as **sRGB** and converts it to linear light in its shader. The default **Gamma** of 2.2 approximates sRGB encoding, so the projected light is proportional to the photometric data. A gamma of 1.0 would give a darker, higher-contrast result.
-- When **Auto-scale beam to fill texture** is on, the FOV is chosen so the beam fills the texture. When it is off, the widest FOV Second Life allows (3.0 rad) is used.
+- When **Auto-scale beam to fill texture** is on (the default), the FOV is chosen so the lamp's pattern fills the texture. When it is off, the widest FOV Second Life allows (3.0 rad) is used, which gives a small bright area for wide lamps.
 
 ### Second Life parameters
 
@@ -72,7 +72,7 @@ The tool calculates radius, falloff, and intensity so wall brightness approximat
 
 ## How it works
 
-The photometric data is mapped onto the square texture the way Second Life projects it. The viewer uses a perspective frustum, so a texel's distance from the centre is proportional to the tangent of its angle from the lamp's axis, not to the angle itself. The midpoints of the texture's edges sit at half the projector FOV from the axis, and the corners show the lamp's light at wider angles. Intensities are normalised to the peak candela value and gamma-encoded before export.
+The photometric data is mapped onto the square texture the way Second Life projects it. The viewer uses a perspective frustum, so a texel's distance from the centre is proportional to the tangent of its angle from the lamp's axis, not to the angle itself. Straight lines stay straight under this projection, so the beam keeps its shape: a square beam, such as a shuttered profile spot, produces a square pattern in the texture, and a round lamp produces a round one. Nothing in the tool imposes a shape of its own. The edge falloff works on intensity rather than position: light at or above the **Beam edge** level (a percentage of peak, 50% by default) is kept exactly, and below it the light fades to nothing at a lower level set by **Falloff width**. Because the fade follows the lamp's own contours, the texture ends in black without changing the beam's shape. Auto-scale fits the level where the fade reaches zero into the frame, and a thin border is always black, because a lit edge would make the projection end in a hard square. Intensities are normalised to the peak candela value and gamma-encoded before export.
 
 A single perspective projector cannot cover a whole hemisphere. For very wide lamps the outermost few degrees are cropped by Second Life's 3.0 rad FOV limit, and the centre of the beam gets relatively few pixels, so a larger output resolution helps.
 

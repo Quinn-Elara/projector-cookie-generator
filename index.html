@@ -197,12 +197,17 @@
     <input type="range" id="gammaSlider" min="0.3" max="3.0" step="0.05" value="2.2"/>
     <span class="sv" id="gammaVal">2.20</span>
   </div>
-  <div class="tr"><label>Auto-scale beam to fill texture <span class="badge">smart</span></label><input type="checkbox" id="autoScaleCheck"/></div>
-  <div class="tr"><label>Soft edge falloff <span class="badge">smooth</span></label><input type="checkbox" id="softEdgeCheck"/></div>
-  <div class="sr" id="softEdgeRow" style="display:none">
+  <div class="tr"><label>Auto-scale beam to fill texture <span class="badge">smart</span></label><input type="checkbox" id="autoScaleCheck" checked/></div>
+  <div class="sr" id="edgeThrRow">
+    <label>Beam edge (% of peak)</label>
+    <input type="range" id="edgeThrSlider" min="1" max="90" step="1" value="50"/>
+    <span class="sv" id="edgeThrVal">50%</span>
+  </div>
+  <div class="tr"><label>Soft edge falloff <span class="badge">smooth</span></label><input type="checkbox" id="softEdgeCheck" checked/></div>
+  <div class="sr" id="softEdgeRow">
     <label>Falloff width</label>
-    <input type="range" id="softEdgeSlider" min="0.01" max="0.5" step="0.01" value="0.1"/>
-    <span class="sv" id="softEdgeVal">0.10</span>
+    <input type="range" id="softEdgeSlider" min="0.01" max="0.5" step="0.01" value="0.25"/>
+    <span class="sv" id="softEdgeVal">0.25</span>
   </div>
   <div class="tr"><label>Gradient noise dithering <span class="badge">quality</span></label><input type="checkbox" id="ditherCheck"/></div>
   <hr class="dv">
@@ -352,6 +357,7 @@ document.querySelectorAll('.preset-btn').forEach(btn=>{
 // ── Sliders / toggles ───────────────────────────────────────
 [['gammaSlider','gammaVal',v=>v.toFixed(2)],
  ['softEdgeSlider','softEdgeVal',v=>v.toFixed(2)],
+ ['edgeThrSlider','edgeThrVal',v=>Math.round(v)+'%'],
  ['ctSlider','ctVal',v=>Math.round(v)+' K'],
  ['caSlider','caVal',v=>v.toFixed(2)],['caBiasSlider','caBiasVal',v=>v.toFixed(2)],
  ['vigSlider','vigVal',v=>v.toFixed(2)],['vigSoftSlider','vigSoftVal',v=>v.toFixed(2)],
@@ -361,7 +367,11 @@ document.querySelectorAll('.preset-btn').forEach(btn=>{
  ['hazeSlider','hazeVal',v=>v.toFixed(2)],
 ].forEach(([s,v,f])=>{ $(s).oninput=()=>{$(v).textContent=f(parseFloat($(s).value));if(parsedData)render();}; });
 ['ditherCheck','autoScaleCheck','softEdgeCheck'].forEach(id=>{
-  $(id).onchange=()=>{ if(id==='softEdgeCheck') $('softEdgeRow').style.display=$(id).checked?'flex':'none'; if(parsedData)render(); };
+  $(id).onchange=()=>{
+    $('softEdgeRow').style.display=$('softEdgeCheck').checked?'flex':'none';
+    $('edgeThrRow').style.display=($('autoScaleCheck').checked||$('softEdgeCheck').checked)?'flex':'none';
+    if(parsedData)render();
+  };
 });
 $('typeSelect').onchange=()=>{ $('lensPanel').style.display=$('typeSelect').value==='colour'?'block':'none'; $('previewLabel').textContent=$('typeSelect').value==='colour'?'Preview (colour)':'Preview (linear)'; if(parsedData)render(); };
 $('resSelect').onchange=()=>{ if(parsedData)render(); };
@@ -627,11 +637,21 @@ function sampleData(data,theta,phi){
   let pn=((phi%360)+360)%360;
   if(hMax<=90+1e-6){       pn=pn%180; if(pn>90) pn=180-pn; }
   else if(hMax<=180+1e-6){ if(pn>180) pn=360-pn; }
-  pn=Math.max(hMin,Math.min(hMax,pn));
-  let hi=nH-2;
-  for(let k=0;k<nH-1;k++) if(pn>=hA[k]&&pn<=hA[k+1]){hi=k;break;}
-  const ht=hA[hi+1]!==hA[hi]?(pn-hA[hi])/(hA[hi+1]-hA[hi]):0;
-  const hi1=Math.min(hi+1,nH-1);
+  let hi,hi1,ht;
+  if(hMax>180+1e-6&&hMax<hMin+360-1e-6){
+    // Full-circle data that stops short of 360 degrees (for example planes at 0, 22.5 ... 337.5):
+    // wrap round, so angles past the last plane interpolate back towards the first plane. Clamping
+    // them to the last plane leaves a visible step along the first plane's direction.
+    if(pn<hMin) pn+=360;
+    if(pn>hMax){hi=nH-1;hi1=0;ht=(pn-hMax)/(hMin+360-hMax);}
+  }
+  if(hi===undefined){
+    pn=Math.max(hMin,Math.min(hMax,pn));
+    hi=nH-2;
+    for(let k=0;k<nH-1;k++) if(pn>=hA[k]&&pn<=hA[k+1]){hi=k;break;}
+    ht=hA[hi+1]!==hA[hi]?(pn-hA[hi])/(hA[hi+1]-hA[hi]):0;
+    hi1=Math.min(hi+1,nH-1);
+  }
   return(cd[hi][vi]*(1-ht)+cd[hi1][vi]*ht)*(1-vt)+(cd[hi][vi1]*(1-ht)+cd[hi1][vi1]*ht)*vt;
 }
 
@@ -655,28 +675,29 @@ function snz(x,y,s){const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy,ux=f
 function fbm(x,y,s,o){let v=0,a=0.5,f=1,m=0;for(let i=0;i<o;i++){v+=snz(x*f,y*f,s+i)*a;m+=a;f*=2.1;a*=0.5;}return v/m;}
 
 // ── Auto-scale ───────────────────────────────────────────────
-function computeAutoScale(data, gamma, threshold=0.01){
-  const P=128, gExp=1/gamma;
+// Fits the lamp's pattern into the texture frame, returning the scale factor sf (the projector FOV is PI/sf).
+// A direction (theta, phi) lands at (tan(theta)cos(phi), tan(theta)sin(phi)) / T in the texture, where
+// T = tan(FOV/2). The pattern fits when T covers the largest single coordinate over every direction brighter
+// than `threshold` (a fraction of peak, so it does not depend on gamma). Using the largest coordinate rather
+// than the radius fits the pattern's bounding square: a square beam lands on the frame instead of on the
+// corners of a circle, and a round beam touches the frame at the middle of each side.
+function computeAutoScale(data, threshold=0.5){
+  const FIT_MARGIN=0.99; // keep the pattern just inside the frame
   let gMax=0;
-  for(let py=0;py<P;py++)for(let px=0;px<P;px++){
-    const u=(px+.5)/P*2-1, v=(py+.5)/P*2-1, r=Math.sqrt(u*u+v*v);
-    if(r>=1) continue;
-    const s=sampleData(data, r*90, (Math.atan2(v,u)*180/Math.PI+360)%360);
-    if(s>gMax) gMax=s;
+  data.candela.forEach(row=>row.forEach(v=>{if(v>gMax)gMax=v;}));
+  if(gMax===0) return 1.0;
+  let T=0;
+  for(let th=0;th<90;th+=0.25){
+    const tanT=Math.tan(th*Math.PI/180);
+    for(let ph=0;ph<360;ph+=3){
+      if(sampleData(data,th,ph)/gMax<=threshold) continue;
+      const a=ph*Math.PI/180;
+      const c=tanT*Math.max(Math.abs(Math.cos(a)),Math.abs(Math.sin(a)));
+      if(c>T) T=c;
+    }
   }
-  if(gMax===0) return 1;
-
-  // We find the 'maxR' relative to the light's actual edge, not the 90-degree limit
-  let maxR = 0;
-  for(let py=0;py<P;py++)for(let px=0;px<P;px++){
-    const u=(px+.5)/P*2-1, v=(py+.5)/P*2-1, r=Math.sqrt(u*u+v*v);
-    if(r>=1) continue;
-    const s=sampleData(data, r*90, (Math.atan2(v,u)*180/Math.PI+360)%360);
-    if(Math.pow(s/gMax, gExp) > threshold && r > maxR) maxR = r;
-  }
-
-  // This SF represents how much of the 90-degree sampling space we are using.
-  return maxR > 0 ? (1.0 / maxR) : 1.0;
+  if(!(T>0)) return 1.0;
+  return Math.PI/(2*Math.atan(T/FIT_MARGIN));
 }
 
 // ── Render ───────────────────────────────────────────────────
@@ -695,7 +716,21 @@ function render(){
   data.candela.forEach(row=>row.forEach(v=>{if(v>gMax)gMax=v;}));
   if(gMax===0) gMax=1;
 
-  const sf=doScale?computeAutoScale(data,gamma):1.0;
+  // Soft edge: a roll-off in INTENSITY, not in position. Light at or above the beam edge level is kept
+  // exactly; below it the light fades to nothing at a lower level (falloff width = how far below, as a
+  // fraction of the beam edge level). The fade follows the lamp's own iso-intensity contours, so it never
+  // imposes a shape: a round lamp stays round and a square beam stays square. Auto-scale fits the level
+  // where the fade reaches zero into the frame, so the texture ends in black.
+  const edgeThr=parseFloat($('edgeThrSlider').value)/100;
+  const cHi=edgeThr, cLo=edgeThr*(1.0-softWidth);
+  function edgeKnee(i){
+    if(!doSoftEdge||i>=cHi) return i;
+    if(i<=cLo) return 0;
+    const t=(i-cLo)/(cHi-cLo);
+    return i*t*t*(3.0-2.0*t); // smoothstep
+  }
+
+  const sf=doScale?computeAutoScale(data,doSoftEdge?cLo:edgeThr):1.0;
   lastScaleFactor=sf; // persist for meta panel
 
   // Same projection Second Life uses (see projectorGeometry): radius is proportional to tan(angle).
@@ -707,20 +742,10 @@ function render(){
     return sampleData(data,theta,(Math.atan2(v,u)*180/Math.PI+360)%360);
   }
 
-  // softMask in r_OUTPUT space (no sf division) - fades the texture disc boundary.
-  // Applied POST-GAMMA: multiply the already-gamma-encoded value by the mask.
-  // This suppresses the gamma-amplified dim tail near r=1 far more effectively
-  // than pre-gamma masking, because post-gamma values are already in perceptual
-  // space where the mask's linear taper matches visual smoothness.
-  function softMask(u,v){
-    if(!doSoftEdge) return 1.0;
-    const r=Math.sqrt(u*u+v*v); // r_OUTPUT - no sf division
-    const inner=1.0-softWidth;
-    if(r<=inner) return 1.0;
-    if(r>=1.0)   return 0.0;
-    const t=(r-inner)/softWidth;
-    return 1.0-t*t*(3.0-2.0*t); // smoothstep
-  }
+  // The texture must end in black: a lit edge makes the projection stop in a hard square. Keep a
+  // thin ring around the texture black, and write it after dithering so noise cannot lift it.
+  const borderPx=type==='equirect'?0:Math.max(1,Math.round(res/256));
+  const isBorder=(px,py)=>px<borderPx||py<borderPx||px>=res-borderPx||py>=res-borderPx;
 
   const canvas=$('previewCanvas');
   canvas.width=res; canvas.height=res;
@@ -735,13 +760,14 @@ function render(){
     const hazeA=parseFloat($('hazeSlider').value);
     const ctRGB=kelvinToRGB(parseFloat($('ctSlider').value));
     for(let py=0;py<res;py++) for(let px=0;px<res;px++){
+      if(isBorder(px,py)){const k=(py*res+px)*4;img.data[k]=img.data[k+1]=img.data[k+2]=0;img.data[k+3]=255;continue;}
       const u=(px+.5)/res*2-1,v=(py+.5)/res*2-1;
       const r=Math.sqrt(u*u+v*v);
       const dx=r>0?u/r:0,dy=r>0?v/r:0;
       const caOff=Math.pow(Math.min(r,1),1+caBias*2)*caS*0.04;
-      const rI=sampleCookie(u+dx*caOff,v+dy*caOff)/gMax;
-      const gI=sampleCookie(u,v)/gMax;
-      const bI=sampleCookie(u-dx*caOff,v-dy*caOff)/gMax;
+      const rI=edgeKnee(sampleCookie(u+dx*caOff,v+dy*caOff)/gMax);
+      const gI=edgeKnee(sampleCookie(u,v)/gMax);
+      const bI=edgeKnee(sampleCookie(u-dx*caOff,v-dy*caOff)/gMax);
       const vigR=Math.pow(Math.max(0,1-r),vigSoft);
       const vig=1-vigS*(1-vigR);
       const dirtM=1-dirtA*(1-fbm(px/res*4,py/res*4,dirtSeed,5)**2);
@@ -749,11 +775,9 @@ function render(){
       const hazeAdd=hazeA>0?hazeA*0.15*Math.exp(-r*2):0;
       let fR=0,fG=0,fB=0;
       if(fringeA>0&&r<1){const f=fringeA*Math.exp(-(1-r)*8)*gI;fR=f*.9;fG=f*.2;fB=f;}
-      // Apply gamma first, then post-gamma softMask
-      const sm=softMask(u,v);
-      const cr=Math.pow(Math.max(0,Math.min(1,((rI+fR)*fresnelMod*vig*dirtM+hazeAdd)*ctRGB[0])),gExp)*sm;
-      const cg=Math.pow(Math.max(0,Math.min(1,((gI+fG)*fresnelMod*vig*dirtM+hazeAdd)*ctRGB[1])),gExp)*sm;
-      const cb=Math.pow(Math.max(0,Math.min(1,((bI+fB)*fresnelMod*vig*dirtM+hazeAdd)*ctRGB[2])),gExp)*sm;
+      const cr=Math.pow(Math.max(0,Math.min(1,((rI+fR)*fresnelMod*vig*dirtM+hazeAdd)*ctRGB[0])),gExp);
+      const cg=Math.pow(Math.max(0,Math.min(1,((gI+fG)*fresnelMod*vig*dirtM+hazeAdd)*ctRGB[1])),gExp);
+      const cb=Math.pow(Math.max(0,Math.min(1,((bI+fB)*fresnelMod*vig*dirtM+hazeAdd)*ctRGB[2])),gExp);
       let fr=cr,fg=cg,fb=cb;
       if(doDither){fr=applyDither(fr,px,py);fg=applyDither(fg,px,py);fb=applyDither(fb,px,py);}
       const i4=(py*res+px)*4;
@@ -762,6 +786,7 @@ function render(){
     }
   } else {
     for(let py=0;py<res;py++) for(let px=0;px<res;px++){
+      if(isBorder(px,py)){const k=(py*res+px)*4;img.data[k]=img.data[k+1]=img.data[k+2]=0;img.data[k+3]=255;continue;}
       const u=(px+.5)/res*2-1,v=(py+.5)/res*2-1;
       let raw;
       if(type==='equirect'){
@@ -769,9 +794,8 @@ function render(){
       } else {
         raw=sampleCookie(u,v);
       }
-      let val=raw/gMax;
-      // Apply gamma first, then softMask post-gamma
-      val=Math.pow(Math.max(0,Math.min(1,val)),gExp)*softMask(u,v);
+      let val=edgeKnee(raw/gMax);
+      val=Math.pow(Math.max(0,Math.min(1,val)),gExp);
       if(doDither) val=applyDither(val,px,py);
       const b=Math.round(val*255);
       const i4=(py*res+px)*4;
